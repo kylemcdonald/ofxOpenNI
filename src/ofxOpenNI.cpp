@@ -1396,6 +1396,16 @@ void ofxOpenNI::updateDepthPixels(){
 
 		}
 	}
+
+	for(int i = 0; i < currentDepthThresholds.size(); i++){
+		ofxOpenNIDepthThreshold & depthThreshold = currentDepthThresholds[i];
+		ofVec3f* p = depthThreshold.pointCloud->getVerticesPointer();
+		if (p)
+			convertProjectiveToWorld(p, depthThreshold.pointCloud->getNumVertices());
+	}
+
+
+
 }
 
 //--------------------------------------------------------------
@@ -1557,6 +1567,10 @@ void ofxOpenNI::updatePointClouds(ofxOpenNIUser & user){
 			}
 		}
 	}
+
+	convertProjectiveToWorld(user.backPointCloud->getVerticesPointer(), user.backPointCloud->getNumVertices());
+
+
     user.bNewPointCloud = true;
 }
 
@@ -3366,14 +3380,20 @@ ofPoint ofxOpenNI::worldToProjective(const XnVector3D& p){
 	return toOf(proj);
 }
 
+
 //--------------------------------------------------------------
-ofPoint ofxOpenNI::projectiveToWorld(const ofPoint& p){
-	XnVector3D proj = toXn(p);
-	return projectiveToWorld(proj);
+void ofxOpenNI::convertProjectiveToWorld(ofVec3f* p, int n){
+	g_Depth.ConvertProjectiveToRealWorld(n,(XnPoint3D*)p,(XnPoint3D*)p);
 }
 
 //--------------------------------------------------------------
-ofPoint ofxOpenNI::projectiveToWorld(const XnVector3D& p){
+ofPoint ofxOpenNI::getConvertedProjectiveToWorld(const ofPoint& p){
+	return getConvertedProjectiveToWorld(toXn(p));
+}
+
+
+//--------------------------------------------------------------
+ofPoint ofxOpenNI::getConvertedProjectiveToWorld(const XnVector3D& p){
 	XnVector3D world;
 	g_Depth.ConvertProjectiveToRealWorld(1,&p,&world);
 	return toOf(world);
