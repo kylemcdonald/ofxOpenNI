@@ -2720,7 +2720,6 @@ float ofxOpenNI::getHeight(){
 
 float ofxOpenNI::getFrameRate(){
     ofxOpenNIScopedLock scopedLock(bIsThreaded, mutex);
-    // this returns a calcualted frame rate based on threaded/normal updates NOT the device target frame rate
     return frameRate;
 }
 
@@ -3419,8 +3418,9 @@ void ofxOpenNI::cameraToWorld(const vector<ofVec2f>& c, vector<ofVec3f>& w){
 	vector<XnPoint3D> projective(nPoints);
 	//XnPoint3D *out = &projective[0];
 
-	//mutex.lock();
-	const XnDepthPixel* d = currentDepthRawPixels->getPixels();
+	//const XnDepthPixel* d = currentDepthRawPixels->getPixels();
+
+	const ofShortPixels d = getDepthRawPixels();//currentDepthRawPixels->getPixels();
 	unsigned int pixel;
 	for (int i = 0; i < nPoints; ++i){
 		pixel = (int)c[i].x + (int)c[i].y * g_DepthMD.XRes();
@@ -3429,9 +3429,8 @@ void ofxOpenNI::cameraToWorld(const vector<ofVec2f>& c, vector<ofVec3f>& w){
 
 		projective[i].X = c[i].x;
 		projective[i].Y = c[i].y;
-		projective[i].Z = float(d[pixel]) / 1000.0f;
+		projective[i].Z = float(d[pixel]);
 	}
-	//unmutex.lock();
-
+	
 	g_Depth.ConvertProjectiveToRealWorld(nPoints,&projective[0], (XnPoint3D*)&w[0]);
 }
