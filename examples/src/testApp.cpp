@@ -5,6 +5,8 @@
 #define PROFILE
 #include "src\ofxProfile.h"
 
+#ifdef _MSC_VER
+#endif
 
 //--------------------------------------------------------------
 void testApp::setup() {
@@ -23,22 +25,32 @@ void testApp::setup() {
 	verdana.loadFont(ofToDataPath("verdana.ttf"), 24);
 }
 
+
 //--------------------------------------------------------------
 void testApp::update(){
 	ofxProfileThisFunction();
-
+	
 	camString = stringstream();
 	
 	ofxProfileSectionPush("openNIDevice update");
 	openNIDevice.update();
 	ofxProfileSectionPop();
 
-
-	return;
-
 	if(openNIDevice.isNewFrame()) {
 		ofxProfileSectionPush("faceTracker update");
-		faceTracker.update(ofxCv::toCv(openNIDevice.getImagePixels()));
+
+		ofxProfileSectionPush("ofPixels ofPixels = openNIDevice.getImagePixels();");
+		ofPixels ofPixels = openNIDevice.getImagePixels();
+		ofxProfileSectionPop();
+
+		ofxProfileSectionPush("cv::Mat mat = ofxCv::toCv(ofPixels);");
+		cv::Mat mat = 	ofxCv::toCv(ofPixels);
+		ofxProfileSectionPop();
+
+		ofxProfileSectionPush("faceTracker.update(mat);");
+		faceTracker.update(mat);
+		ofxProfileSectionPop();
+		
 		ofxProfileSectionPop();
 
 		if(!faceTracker.getFound())
@@ -49,6 +61,8 @@ void testApp::update(){
 
 	}
 
+	
+	ofxProfileSectionPush("ofxOpenNIDepthThreshold...");
 	// reset all depthThresholds to 0,0,0
 	for(int i = 0; i < openNIDevice.getMaxNumHands(); i++){
 		ofxOpenNIDepthThreshold & depthThreshold = openNIDevice.getDepthThreshold(i);
@@ -62,8 +76,10 @@ void testApp::update(){
 	{
 		fingers[i].isTracked = false;
 	}
-	// iterate through users
+	ofxProfileSectionPop();
 
+
+	// iterate through users
 	ofxProfileSectionPush("iterate hands");
 	for (int i = 0; i < openNIDevice.getNumTrackedHands(); i++)
 	{
@@ -126,7 +142,6 @@ void testApp::update(){
 				fingers[i].position.pop_back();
 			}
 
-
 		}
 		else
 		{
@@ -141,17 +156,19 @@ void testApp::update(){
 //--------------------------------------------------------------
 void testApp::draw(){
 	ofxProfileThisFunction();
-
 	ofBackground(0);
 
 
 	if (drawOpenNiDebug)
 	{
+		ofxProfileSectionPush("draw OpenNiDebug");
+
 		ofPushMatrix();
 		ofPushStyle();
 
 		openNIDevice.drawDebug(); // draw debug (ie., image, depth, skeleton)
 		ofPopMatrix();
+		ofxProfileSectionPop();
 	}
 
 
@@ -162,8 +179,6 @@ void testApp::draw(){
 	ss << ofxProfile::describe();
 	ofDrawBitmapString(ss.str(), 10, 10);
 
-
-	return;
 
 	sceneCam.begin();
 	ofEnableBlendMode(OF_BLENDMODE_ADD);
@@ -261,7 +276,9 @@ void testApp::draw(){
 
 				ofSetColor(ofColor::magenta);
 
+				ofxProfileSectionPush("getIntersectionPointWithLine");
 				ofPoint screenIntersectionPoint = scene.screen.getIntersectionPointWithLine(facePos, fingers[i].getFilteredPosition());
+				ofxProfileSectionPop();
 
 				ofSphere(screenIntersectionPoint, 10);
 
@@ -327,7 +344,6 @@ void testApp::draw(){
 		ofDrawBitmapString(camString.str(), 10, 20);
 		//verdana.drawString(msg, 20, 480 - 20);
 	}
-
 }
 
 //--------------------------------------------------------------
@@ -351,6 +367,8 @@ void testApp::keyPressed(int key){
 	{
 	case '1': drawDebugString = !drawDebugString; break;
 	case '2': drawOpenNiDebug = !drawOpenNiDebug; break;
+
+	case 'C': ofxProfile::clear(); break;
 
 	case 'f': ofToggleFullscreen(); break;
 	default:
@@ -397,7 +415,7 @@ void testApp::setupOpenNiDevice()
 	openNIDevice.addImageGenerator();
 	openNIDevice.addDepthGenerator();
 	openNIDevice.setUseDepthRawPixels(true);
-	openNIDevice.setUseBackBuffer(false);
+	//openNIDevice.setUseBackBuffer(true);
 
 	openNIDevice.setRegister(true);
 	openNIDevice.setMirror(true);
