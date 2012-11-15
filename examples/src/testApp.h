@@ -68,13 +68,18 @@ private:
 
 
 private:
-	openni::FrameRef m_frame;
+	openni::FrameRef frame;
 
-	openni::Stream depth;
+	openni::Stream depthStream;
 	openni::Device device;
 
-	ofShortPixels depthPixels;
+	
+	ofShortPixels* depthPixelsDoubleBuffer[2];
+	
 	ofTexture depthTexture;
+
+	ofTexture texScreen;
+	int counter;
 
 
 };
