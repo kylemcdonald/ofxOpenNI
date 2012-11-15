@@ -4,9 +4,12 @@
 
 #define PROFILE
 #include "src\ofxProfile.h"
+#include "OpenNI.h"
 
 #ifdef _MSC_VER
 #endif
+
+using namespace openni;
 
 //--------------------------------------------------------------
 void testApp::setup() {
@@ -22,7 +25,6 @@ void testApp::setup() {
 
 	sceneCam.setGlobalPosition(0,0,1000);
 
-	verdana.loadFont(ofToDataPath("verdana.ttf"), 24);
 }
 
 
@@ -32,10 +34,7 @@ void testApp::update(){
 	
 	camString = stringstream();
 	
-	ofxProfileSectionPush("openNIDevice update");
-	openNIDevice.update();
-	ofxProfileSectionPop();
-
+	/*
 	if(openNIDevice.isNewFrame()) {
 		ofxProfileSectionPush("faceTracker update");
 
@@ -60,8 +59,11 @@ void testApp::update(){
 		}
 
 	}
+	*/
 
-	
+
+
+	/*
 	ofxProfileSectionPush("ofxOpenNIDepthThreshold...");
 	// reset all depthThresholds to 0,0,0
 	for(int i = 0; i < openNIDevice.getMaxNumHands(); i++){
@@ -77,8 +79,10 @@ void testApp::update(){
 		fingers[i].isTracked = false;
 	}
 	ofxProfileSectionPop();
+	*/
 
 
+	/*
 	// iterate through users
 	ofxProfileSectionPush("iterate hands");
 	for (int i = 0; i < openNIDevice.getNumTrackedHands(); i++)
@@ -150,6 +154,9 @@ void testApp::update(){
 
 	}
 	ofxProfileSectionPop();
+	*/
+
+
 
 }
 
@@ -157,21 +164,29 @@ void testApp::update(){
 void testApp::draw(){
 	ofxProfileThisFunction();
 	ofBackground(0);
+	ofSetColor(255, 255, 255);
+	
+	ofTexture texScreen;
+	texScreen.allocate(300,300,GL_RGB);
 
 
-	if (drawOpenNiDebug)
-	{
-		ofxProfileSectionPush("draw OpenNiDebug");
+	glPushMatrix();
+	ofSetHexColor(0xffffff);
+	glTranslatef(700,210,0);
+	//glRotatef(counter, 0.1f, 0.03f, 0);
+	depthTexture.draw(0,0, depthTexture.getWidth(), depthTexture.getHeight());
+	texScreen.loadScreenData(0,0, texScreen.getWidth(), texScreen.getHeight());
+	texScreen.draw(500, 500, texScreen.getWidth(), texScreen.getHeight());
+	texScreen.draw(mouseX, mouseY, texScreen.getWidth(), texScreen.getHeight());
 
-		ofPushMatrix();
-		ofPushStyle();
+	glPopMatrix();
+	
+	ofCircle(mouseX, mouseY,20);
+	camString << "DFDF";
+	
+	ofDrawBitmapString(camString.str(), 10, 20);
 
-		openNIDevice.drawDebug(); // draw debug (ie., image, depth, skeleton)
-		ofPopMatrix();
-		ofxProfileSectionPop();
-	}
-
-
+	/*
 
 	
 	stringstream ss;
@@ -344,13 +359,17 @@ void testApp::draw(){
 		ofDrawBitmapString(camString.str(), 10, 20);
 		//verdana.drawString(msg, 20, 480 - 20);
 	}
+	*/
+
 }
 
+/*
 //--------------------------------------------------------------
 void testApp::handEvent(ofxOpenNIHandEvent & event){
 	// show hand event messages in the console
 	ofLogNotice() << getHandStatusAsString(event.handStatus) << "for hand" << event.id << "from device" << event.deviceID;
 }
+*/
 
 //--------------------------------------------------------------
 void testApp::exit(){
@@ -358,7 +377,12 @@ void testApp::exit(){
 	faceTracker.stopThread();
 	faceTracker.waitForThread();
 
-	openNIDevice.stop();
+	
+	depth.removeListener(this);
+	depth.stop();
+	depth.destroy();
+	device.close();
+	OpenNI::shutdown();
 }
 
 //--------------------------------------------------------------
@@ -407,8 +431,60 @@ void testApp::windowResized(int w, int h){
 
 }
 
-void testApp::setupOpenNiDevice()
+//TODO: exception?
+int testApp::setupOpenNiDevice()
 {
+
+	Status rc = OpenNI::initialize();
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Initialize failed\n%s\n", OpenNI::getExtendedError());
+		return 1;
+	}
+
+	OpenNI::addListener(this);
+
+	rc = device.open(ONI_ANY_DEVICE);
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Couldn't open device\n%s\n", OpenNI::getExtendedError());
+		return 2;
+	}
+
+
+	if (device.getStreamSourceInfo(ONI_STREAM_SOURCE_DEPTH) != NULL)
+	{
+		rc = depth.create(device, ONI_STREAM_SOURCE_DEPTH);
+		if (rc != ONI_STATUS_OK)
+		{
+			printf("Couldn't create depth stream\n%s\n", OpenNI::getExtendedError());
+		}
+	}
+	rc = depth.start();
+	
+	int w = depth.getVideoMode().getXResolution();
+	int h = depth.getVideoMode().getYResolution();
+	
+	depthTexture.allocate(w, h, GL_LUMINANCE);
+	
+	depthPixels.allocate(w, h, GL_RGBA);
+
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
+	}
+
+	
+	// Register to new frame
+	//rc = depth.addListener(this);
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Couldn't register listener for the depth stream\n%s\n", OpenNI::getExtendedError());
+	}
+
+
+
+	/*
 	openNIDevice.setup();
 	//openNIDevice.setupFromONI("C:/f/q.oni");
 
@@ -447,7 +523,24 @@ void testApp::setupOpenNiDevice()
 	}
 
 	openNIDevice.start();
+	*/
+
 }
+
+void testApp::onNewFrame( Stream& stream )
+{
+	stream.readFrame(&m_frame);
+	//analyzeFrame(m_frame);
+	const unsigned short* data = (const unsigned short*)m_frame.getData();
+
+	depthPixels.setFromPixels(data, m_frame.getWidth(), m_frame.getHeight(), OF_IMAGE_GRAYSCALE);
+	
+
+	depthTexture.loadData(data, m_frame.getWidth(), m_frame.getHeight(), GL_LUMINANCE);
+
+		//notify face?
+}
+
 
 
 ofVec3f testApp::Finger::getFilteredPosition(float a)

@@ -1,7 +1,8 @@
 #ifndef _TEST_APP
 #define _TEST_APP
 
-#include "ofxOpenNI.h"
+#include "OpenNI.h"
+
 #include "ofMain.h"
 #include "ofxFaceTrackerThreaded.h"
 #include "..\Scene.h"
@@ -9,7 +10,8 @@
 #define MAX_DEVICES 2
 #define MAX_HANDS 4
 
-class testApp : public ofBaseApp{
+class testApp : public ofBaseApp, public openni::Stream::Listener, public openni::OpenNI::Listener
+{
 
 public:
 
@@ -26,13 +28,14 @@ public:
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
 
+	virtual void onNewFrame( openni::Stream& stream);
+
 private:
 
-	void handEvent(ofxOpenNIHandEvent & event);
-	void setupOpenNiDevice();
+//	void handEvent(ofxOpenNIHandEvent & event);
+	int setupOpenNiDevice();
 
-	ofxOpenNI openNIDevice;
-	ofTrueTypeFont verdana;
+
 
 	ofxFaceTrackerThreaded faceTracker;
 
@@ -64,7 +67,14 @@ private:
 	deque<ofVec2f> screenPointHistory;
 
 
+private:
+	openni::FrameRef m_frame;
 
+	openni::Stream depth;
+	openni::Device device;
+
+	ofShortPixels depthPixels;
+	ofTexture depthTexture;
 
 
 };
