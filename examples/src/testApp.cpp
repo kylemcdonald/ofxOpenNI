@@ -11,7 +11,11 @@ void testApp::setup(){
 //	ofSetFullscreen(true);
 	ofSetVerticalSync(true);
 
-	setupOpenNiDevice();
+	setupOpenNi();
+	setupNite();
+
+	start();
+
 	faceTracker.setup();
 }
 
@@ -90,7 +94,7 @@ void testApp::windowResized(int w, int h){
 
 
 //TODO: exception?
-int testApp::setupOpenNiDevice()
+int testApp::setupOpenNi()
 {
 	Status rc = OpenNI::initialize();
 	if (rc != ONI_STATUS_OK)
@@ -123,12 +127,9 @@ int testApp::setupOpenNiDevice()
 		}
 	}
 
-	rc = depthStream.start();
-	if (rc != ONI_STATUS_OK)
-	{
-		printf("Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
-	}
 	
+//	stream.readFrame(&frame);
+
 
 	int w = depthStream.getVideoMode().getXResolution();
 	int h = depthStream.getVideoMode().getYResolution();
@@ -143,16 +144,8 @@ int testApp::setupOpenNiDevice()
 	}
 	colorPixels.allocate(w, h, OF_IMAGE_COLOR);
 
-	onNewFrame(depthStream);
+//	onNewFrame(depthStream);
 
-	// Register to new frame
-	rc = depthStream.addListener(this);
-	if (rc != ONI_STATUS_OK)
-	{
-		printf("Couldn't register listener for the depth stream\n%s\n", OpenNI::getExtendedError());
-	}
-
-	
 	return 0;
 
 }
@@ -175,6 +168,36 @@ void testApp::onNewFrame( Stream& stream )
 
 	swap(depthPixelsDoubleBuffer[0],depthPixelsDoubleBuffer[1]);
 	//InterlockedExchangePointer(depthPixelsDoubleBuffer[0],depthPixelsDoubleBuffer[1]);
+
+	
+	nite::HandTrackerFrameRef handTrackerFrame;
+	nite::Status niteRc = handTracker.readFrame(&handTrackerFrame);
+	if (niteRc != NITE_STATUS_OK)
+	{
+		printf("Get next frame failed\n");
+	}
+
+	const nite::Array<nite::GestureData>& gestures = handTrackerFrame.getGestures();
+	for (int i = 0; i < gestures.getSize(); ++i)
+	{
+		if (gestures[i].getState() == NITE_GESTURE_STATE_COMPLETED)
+		{
+			nite::HandId newId;
+			handTracker.startHandTracking(gestures[i].getCurrentPosition(), &newId);
+		}
+	}
+
+	const nite::Array<nite::HandData>& hands = handTrackerFrame.getHands();
+	for (int i = 0; i < hands.getSize(); ++i)
+	{
+		const nite::HandData& hand = hands[i];
+		if (hand.getState() != NITE_HAND_STATE_LOST)
+		{
+			printf("%d. (%5.2f, %5.2f, %5.2f)\n", hand.getId(), hand.getPosition().x, hand.getPosition().y, hand.getPosition().z);
+		}
+	}
+
+
 		//notify face?
 }
 
@@ -190,5 +213,54 @@ void testApp::exit(){
 	depthStream.stop();
 	depthStream.destroy();
 	device.close();
+
 	OpenNI::shutdown();
+	nite::NiTE::shutdown();
+
+}
+
+int testApp::setupNite()
+{
+	nite::Status niteRc;
+
+	niteRc = nite::NiTE::initialize();
+	if (niteRc != NITE_STATUS_OK)
+	{
+		printf("NiTE initialization failed\n");
+		return 1;
+	}
+
+	niteRc = handTracker.create();
+	if (niteRc != NITE_STATUS_OK)
+	{
+		printf("Couldn't create user tracker\n");
+		return 3;
+	}
+
+
+	return 0;
+}
+
+int testApp::start()
+{
+	Status rc = depthStream.start();
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
+	}
+
+	// Register to new frame
+	rc = depthStream.addListener(this);
+	if (rc != ONI_STATUS_OK)
+	{
+		printf("Couldn't register listener for the depth stream\n%s\n", OpenNI::getExtendedError());
+	}
+
+
+	handTracker.startGestureDetection(NITE_GESTURE_HAND_RAISE);
+	handTracker.startGestureDetection(NITE_GESTURE_WAVE);
+	printf("\nWave your hand to start tracking it...\n");
+
+	return 0;
+
 }

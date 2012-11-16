@@ -2,6 +2,8 @@
 #define _TEST_APP
 
 #include "OpenNI.h"
+#include "NiTE.h"
+
 
 #include "ofMain.h"
 #include "ofxFaceTrackerThreaded.h"
@@ -33,7 +35,9 @@ public:
 private:
 
 //	void handEvent(ofxOpenNIHandEvent & event);
-	int setupOpenNiDevice();
+	int setupOpenNi();
+	int setupNite();
+	int start();
 
 
 
@@ -82,6 +86,7 @@ private:
 	ofTexture texScreen;
 	int counter;
 
+	nite::HandTracker handTracker;
 
 };
 
