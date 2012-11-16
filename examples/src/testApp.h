@@ -75,7 +75,8 @@ private:
 
 	
 	ofShortPixels* depthPixelsDoubleBuffer[2];
-	
+	ofPixels colorPixels;
+
 	ofTexture depthTexture;
 
 	ofTexture texScreen;
