@@ -11,8 +11,6 @@ void testApp::setup(){
 //	ofSetFullscreen(true);
 	ofSetVerticalSync(true);
 
-	setupColorMap();
-
 	setupOpenNi();
 	setupNite();
 
@@ -49,20 +47,12 @@ void testApp::draw(){
 	unsigned short* p = depthPixels->getPixels();
 	for (int i=0; i < depthPixels->size(); i++)
 	{
-		unsigned short& d = p[i];
+		unsigned short& k = p[i];
 
-		unsigned short k = (d-00); //400, 4500 -> 0 - 4000;
-		if (k < 768) // k & 0xff00
 		{
-			colorPixels[3*i + 0] = 0;
-			colorPixels[3*i + 1] = 0;
-			colorPixels[3*i + 2] = k;// & 0xff;
-		}
-		else
-		{
-			colorPixels[3*i + 0] = (k >> 8) & 0xff;
-			colorPixels[3*i + 1] = (k >> 4) & 0xff;
-			colorPixels[3*i + 2] = 0xff;// & 0xff;
+			colorPixels[3*i + 0] = (k >> 5) & 0xff;
+			colorPixels[3*i + 1] = (k >> 3) & 0xff;
+			colorPixels[3*i + 2] = k & 0xff;// & 0xff;
 
 		}
 	}
@@ -72,6 +62,23 @@ void testApp::draw(){
 
 	ofSetHexColor(0xffffff);
 	depthTexture.draw(0,0, depthTexture.getWidth(), depthTexture.getHeight());
+
+
+	const nite::Array<nite::HandData>& hands = handTrackerFrame[0].getHands();
+	for (int i = 0; i < hands.getSize(); ++i)
+	{
+		const nite::HandData& hand = hands[i];
+		if (hand.getState() != NITE_HAND_STATE_LOST)
+		{
+
+			ofVec2f handScreenPos;
+			handTracker.convertHandCoordinatesToDepth(hand.getPosition().x,hand.getPosition().y,hand.getPosition().z,&handScreenPos.x, &handScreenPos.y);
+			ofCircle(ofPoint(handScreenPos), 10);
+			ofDrawBitmapStringHighlight(ofToString(hand.getId()), handScreenPos);
+			//		printf("%d. (%5.2f, %5.2f, %5.2f)\n", hand.getId(), hand.getPosition().x, hand.getPosition().y, hand.getPosition().z);
+		}
+	}
+
 
 	ofCircle(mouseX, mouseY,20);
 	
@@ -176,11 +183,10 @@ int testApp::setupOpenNi()
 void testApp::onNewFrame( Stream& stream )
 {
 	stream.readFrame(&frame);
-	frame._getFrame();
 	const unsigned short* data = (const unsigned short*)frame.getData();
 
 	bool debugPrintMiddlePixel = false;
-	if (debugPrintMiddlePixel)
+	if (debugPrintMiddlePixel) //TODO: move to Utils
 	{
 		int middleIndex = (frame.getHeight()+1)*frame.getWidth()/2;
 		DepthPixel* pDepth = (DepthPixel*)frame.getData();
@@ -189,18 +195,18 @@ void testApp::onNewFrame( Stream& stream )
 
 	depthPixelsDoubleBuffer[1]->setFromPixels(data, frame.getWidth(), frame.getHeight(), OF_IMAGE_GRAYSCALE);
 
-	swap(depthPixelsDoubleBuffer[0],depthPixelsDoubleBuffer[1]);
+	depthPixelsDoubleBuffer[0] = depthPixelsDoubleBuffer[1];
 	//InterlockedExchangePointer(depthPixelsDoubleBuffer[0],depthPixelsDoubleBuffer[1]);
 
 	
-	nite::HandTrackerFrameRef handTrackerFrame;
-	nite::Status niteRc = handTracker.readFrame(&handTrackerFrame);
+	nite::Status niteRc = handTracker.readFrame(&handTrackerFrame[1]);
 	if (niteRc != NITE_STATUS_OK)
 	{
 		printf("Get next frame failed\n");
 	}
 
-	const nite::Array<nite::GestureData>& gestures = handTrackerFrame.getGestures();
+	
+	const nite::Array<nite::GestureData>& gestures = handTrackerFrame[1].getGestures();
 	for (int i = 0; i < gestures.getSize(); ++i)
 	{
 		if (gestures[i].getState() == NITE_GESTURE_STATE_COMPLETED)
@@ -209,16 +215,7 @@ void testApp::onNewFrame( Stream& stream )
 			handTracker.startHandTracking(gestures[i].getCurrentPosition(), &newId);
 		}
 	}
-
-	const nite::Array<nite::HandData>& hands = handTrackerFrame.getHands();
-	for (int i = 0; i < hands.getSize(); ++i)
-	{
-		const nite::HandData& hand = hands[i];
-		if (hand.getState() != NITE_HAND_STATE_LOST)
-		{
-			printf("%d. (%5.2f, %5.2f, %5.2f)\n", hand.getId(), hand.getPosition().x, hand.getPosition().y, hand.getPosition().z);
-		}
-	}
+	handTrackerFrame[0] = handTrackerFrame[1];
 
 
 		//notify face?
@@ -239,9 +236,9 @@ void testApp::exit(){
 	depthStream.destroy();
 	device.close();
 
-	OpenNI::shutdown();
 	nite::NiTE::shutdown();
-
+	OpenNI::shutdown();
+	
 }
 
 int testApp::setupNite()

@@ -38,6 +38,7 @@ public:
 
 	virtual void onNewFrame( openni::Stream& stream);
 
+
 private:
 
 //	void handEvent(ofxOpenNIHandEvent & event);
@@ -104,6 +105,8 @@ private:
 	float red, green, blue; 
 	bool bdrawGrid; 
 	bool bdrawPadding; 
+
+	nite::HandTrackerFrameRef handTrackerFrame[2];
 
 
 };
