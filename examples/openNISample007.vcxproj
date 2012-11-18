@@ -119,6 +119,7 @@ if not exist "$(ProjectDir)\bin\data" mkdir  "$(ProjectDir)\bin\data"
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\git\github\ofxVirtualScreen\ofxVirtualScreen.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\ofxCv\src\Calibration.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\ofxCv\src\ContourFinder.cpp" />
     <ClCompile Include="..\..\..\addons\ofxCv\libs\ofxCv\src\Distance.cpp" />
@@ -140,11 +141,15 @@ if not exist "$(ProjectDir)\bin\data" mkdir  "$(ProjectDir)\bin\data"
     <ClCompile Include="..\..\..\addons\ofxFaceTracker\src\ExpressionClassifier.cpp" />
     <ClCompile Include="..\..\..\addons\ofxFaceTracker\src\ofxFaceTracker.cpp" />
     <ClCompile Include="..\..\ofxProfile\src\ofxProfile.cpp" />
-    <ClCompile Include="Scene.cpp" />
+    <ClCompile Include="..\..\ofxXmlSettings\ofxXmlSettings.cpp" />
+    <ClCompile Include="..\..\ofxXmlSettings\tinyxml.cpp" />
+    <ClCompile Include="..\..\ofxXmlSettings\tinyxmlerror.cpp" />
+    <ClCompile Include="..\..\ofxXmlSettings\tinyxmlparser.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\testApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\..\..\git\github\ofxVirtualScreen\ofxVirtualScreen.h" />
     <ClInclude Include="..\..\..\addons\ofxCv\libs\ofxCv\include\ofxCv\Calibration.h" />
     <ClInclude Include="..\..\..\addons\ofxCv\libs\ofxCv\include\ofxCv\ContourFinder.h" />
     <ClInclude Include="..\..\..\addons\ofxCv\libs\ofxCv\include\ofxCv\Distance.h" />
@@ -250,7 +255,49 @@ if not exist "$(ProjectDir)\bin\data" mkdir  "$(ProjectDir)\bin\data"
     <ClInclude Include="..\..\..\addons\ofxOpenCv\libs\opencv\include\opencv2\video\tracking.hpp" />
     <ClInclude Include="..\..\..\addons\ofxOpenCv\libs\opencv\include\opencv2\video\video.hpp" />
     <ClInclude Include="..\..\ofxProfile\src\ofxProfile.h" />
-    <ClInclude Include="Scene.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUI.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUI2DPad.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIBaseDraws.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIBiLabelSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIButton.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUICanvas.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUICircleSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUICustomImageButton.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIDropDownList.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIEventArgs.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIFPS.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIFPSSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIImage.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIImageButton.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIImageSampler.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIImageSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIImageToggle.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUILabel.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUILabelButton.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUILabelToggle.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIMinimalSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIMovingGraph.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIMultiImageButton.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIMultiImageSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIMultiImageToggle.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUINumberDialer.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIRadio.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIRangeSlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIRectangle.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIRotarySlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIScrollableCanvas.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUISlider.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUISpacer.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUISpectrum.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUITextArea.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUITextInput.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIToggle.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIToggleMatrix.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIWaveform.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIWidget.h" />
+    <ClInclude Include="..\..\ofxUI\src\ofxUIWidgetWithLabel.h" />
+    <ClInclude Include="..\..\ofxXmlSettings\ofxXmlSettings.h" />
+    <ClInclude Include="..\..\ofxXmlSettings\tinyxml.h" />
     <ClInclude Include="src\testApp.h" />
   </ItemGroup>
   <ItemGroup>

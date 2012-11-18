@@ -11,18 +11,31 @@ void testApp::setup(){
 //	ofSetFullscreen(true);
 	ofSetVerticalSync(true);
 
+	setupColorMap();
+
 	setupOpenNi();
 	setupNite();
 
-	start();
+	img = new ofImage(); 
+	img->getTextureReference().allocate(640,480, GL_DEPTH);
+	img->setColor(320,240, ofColor::white);
+	buffer = new float[256];     
+
+	for(int i = 0; i < 256; i++) { buffer[i] = ofNoise(i/100.0); }
+	setGUI4();
 
 	faceTracker.setup();
+
+	start();
+
+
 }
 
 
 //--------------------------------------------------------------
 void testApp::update(){
 	camString = stringstream();
+	mg->addPoint(ofGetFrameRate());
 
 //	onNewFrame(depthStream);
 }
@@ -36,12 +49,22 @@ void testApp::draw(){
 	unsigned short* p = depthPixels->getPixels();
 	for (int i=0; i < depthPixels->size(); i++)
 	{
-		unsigned short d = p[i] - 00;
-		unsigned short k = (d-400); //400, 4500 -> 0 - 4000;
-		k = k >> 3; // - > 0 - 1000
-		colorPixels[3*i + 0] = 0;
-		colorPixels[3*i + 1] = k & 0xff;
-		colorPixels[3*i + 2] = k & 0xff;
+		unsigned short& d = p[i];
+
+		unsigned short k = (d-00); //400, 4500 -> 0 - 4000;
+		if (k < 768) // k & 0xff00
+		{
+			colorPixels[3*i + 0] = 0;
+			colorPixels[3*i + 1] = 0;
+			colorPixels[3*i + 2] = k;// & 0xff;
+		}
+		else
+		{
+			colorPixels[3*i + 0] = (k >> 8) & 0xff;
+			colorPixels[3*i + 1] = (k >> 4) & 0xff;
+			colorPixels[3*i + 2] = 0xff;// & 0xff;
+
+		}
 	}
 
 	depthTexture.loadData(colorPixels);
@@ -153,7 +176,7 @@ int testApp::setupOpenNi()
 void testApp::onNewFrame( Stream& stream )
 {
 	stream.readFrame(&frame);
-	
+	frame._getFrame();
 	const unsigned short* data = (const unsigned short*)frame.getData();
 
 	bool debugPrintMiddlePixel = false;
@@ -205,6 +228,8 @@ void testApp::onNewFrame( Stream& stream )
 
 //--------------------------------------------------------------
 void testApp::exit(){
+
+	delete gui4; 
 
 	faceTracker.stopThread();
 	faceTracker.waitForThread();
@@ -263,4 +288,109 @@ int testApp::start()
 
 	return 0;
 
+}
+
+
+
+void testApp::setGUI4()
+{	
+	float dim = 16; 
+	float xInit = OFX_UI_GLOBAL_WIDGET_SPACING; 
+	float length = 255-xInit; 
+	gui4 = new ofxUIScrollableCanvas(length*3+xInit*3+6, 0, length+xInit, ofGetHeight());     
+	gui4->addWidgetDown(new ofxUILabel("PANEL 4: SCROLLABLE", OFX_UI_FONT_LARGE)); 	
+
+	gui4->addSpacer(length-xInit, 2);
+
+	gui4->addWidgetDown(new ofxUILabel("BILABEL SLIDER", OFX_UI_FONT_MEDIUM)); 				
+	gui4->addWidgetDown(new ofxUIBiLabelSlider(length-xInit, 0, 100, 50, "BILABEL", "HOT", "COLD", OFX_UI_FONT_MEDIUM));
+
+	gui4->addWidgetDown(new ofxUILabel("MINIMAL SLIDER", OFX_UI_FONT_MEDIUM)); 				
+	gui4->addWidgetDown(new ofxUIMinimalSlider(length-xInit, dim, 0, 100, 50.0, "MINIMAL",OFX_UI_FONT_MEDIUM));
+
+	gui4->addSpacer(length-xInit, 2);
+
+	gui4->addWidgetDown(new ofxUILabel("CIRCLE SLIDER", OFX_UI_FONT_MEDIUM)); 				
+	gui4->addWidgetDown(new ofxUICircleSlider((length-xInit)*.5, 0, 100, 50.0, "NORTH SOUTH", OFX_UI_FONT_MEDIUM));    
+
+	gui4->addSpacer(length-xInit, 2);
+	gui4->addWidgetDown(new ofxUILabel("FPS SLIDER", OFX_UI_FONT_MEDIUM)); 				
+	gui4->addFPSSlider("FPS SLIDER", length-xInit, dim);
+
+	vector<float> buffer; 
+	for(int i = 0; i < 256; i++)
+	{
+		buffer.push_back(0.0);
+	}
+
+	gui4->addWidgetDown(new ofxUILabel("MOVING GRAPH", OFX_UI_FONT_MEDIUM)); 				    
+	mg = (ofxUIMovingGraph *) gui4->addWidgetDown(new ofxUIMovingGraph(length-xInit, 120, buffer, 256, 0, 400, "MOVING GRAPH"));
+
+	gui4->addSpacer(length-xInit, 2);
+	gui4->addWidgetDown(new ofxUILabel("IMAGE SAMPLER", OFX_UI_FONT_MEDIUM)); 				
+	gui4->addWidgetDown(new ofxUIImageSampler(img->getWidth(), img->getHeight(), img, "SAMPLER"));
+	
+	gui4->addWidgetDown(new ofxUIMultiImageButton(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
+	gui4->addWidgetDown(new ofxUIMultiImageToggle(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
+
+
+	ofAddListener(gui4->newGUIEvent,this,&testApp::guiEvent);
+}
+
+
+void testApp::guiEvent(ofxUIEventArgs &e)
+{
+	string name = e.widget->getName(); 
+	int kind = e.widget->getKind(); 
+	cout << "got event from: " << name << endl; 	
+
+	if(name == "RED")
+	{
+		ofxUISlider *slider = (ofxUISlider *) e.widget; 
+		cout << "RED " << slider->getScaledValue() << endl; 
+		red = slider->getScaledValue(); 
+	}
+	else if(name == "GREEN")
+	{
+		ofxUISlider *slider = (ofxUISlider *) e.widget; 
+		cout << "GREEN " << slider->getScaledValue() << endl; 
+		green = slider->getScaledValue(); 
+	}
+
+	else if(name == "BLUE")
+	{
+		ofxUISlider *slider = (ofxUISlider *) e.widget; 
+		cout << "BLUE " << slider->getScaledValue() << endl; 
+		blue = slider->getScaledValue(); 		
+	}
+	else if(name == "DRAW GRID")
+	{
+		ofxUIButton *button = (ofxUIButton *) e.widget; 
+		bdrawGrid = button->getValue(); 
+	}
+	else if(name == "D_GRID")
+	{
+		ofxUIToggle *toggle = (ofxUIToggle *) e.widget; 
+		bdrawGrid = toggle->getValue(); 
+	}
+	else if(name == "TEXT INPUT")
+	{
+		ofxUITextInput *textinput = (ofxUITextInput *) e.widget; 
+		if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_ENTER)
+		{
+			cout << "ON ENTER: "; 
+			//            ofUnregisterKeyEvents((testApp*)this); 
+		}
+		else if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_FOCUS)
+		{
+			cout << "ON FOCUS: "; 
+		}
+		else if(textinput->getTriggerType() == OFX_UI_TEXTINPUT_ON_UNFOCUS)
+		{
+			cout << "ON BLUR: "; 
+			//            ofRegisterKeyEvents(this);             
+		}        
+		string output = textinput->getTextString(); 
+		cout << output << endl; 
+	}
 }

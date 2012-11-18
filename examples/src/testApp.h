@@ -7,7 +7,11 @@
 
 #include "ofMain.h"
 #include "ofxFaceTrackerThreaded.h"
-#include "..\Scene.h"
+
+#include "..\..\..\git\github\ofxVirtualScreen\ofxVirtualScreen.h"
+
+#include "ofxUI\src\ofxUI.h"
+
 
 #define MAX_DEVICES 2
 #define MAX_HANDS 4
@@ -29,6 +33,8 @@ public:
 	void mousePressed(int x, int y, int button);
 	void mouseReleased(int x, int y, int button);
 	void windowResized(int w, int h);
+
+	void guiEvent(ofxUIEventArgs &e);
 
 	virtual void onNewFrame( openni::Stream& stream);
 
@@ -58,8 +64,6 @@ private:
 	};
 
 	Finger fingers[MAX_HANDS];
-	Scene scene;
-
 
 	bool drawDebugString;
 	bool drawOpenNiDebug;
@@ -69,7 +73,6 @@ private:
 	ofVec3f facePos;
 	ofVec2f screenPoint;
 	deque<ofVec2f> screenPointHistory;
-
 
 private:
 	openni::FrameRef frame;
@@ -87,6 +90,21 @@ private:
 	int counter;
 
 	nite::HandTracker handTracker;
+
+	Scene scene;
+
+
+
+	void setGUI4(); 	    
+	ofxUIScrollableCanvas *gui4;
+	ofxUIMovingGraph *mg; 
+	float *buffer; 
+	ofImage *img; 
+	
+	float red, green, blue; 
+	bool bdrawGrid; 
+	bool bdrawPadding; 
+
 
 };
 
