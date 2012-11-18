@@ -12,7 +12,7 @@ void testApp::setup(){
 
 	ofSetCircleResolution(100);
 	//ofSetFrameRate(300);
-//	ofSetFullscreen(true);
+	//	ofSetFullscreen(true);
 	ofSetVerticalSync(true);
 
 	setupOpenNi();
@@ -26,7 +26,7 @@ void testApp::setup(){
 	for(int i = 0; i < 256; i++) { buffer[i] = ofNoise(i/100.0); }
 	setGUI4();
 
-	faceTracker.setup();
+//	faceTracker.setup();
 
 	start();
 
@@ -39,15 +39,13 @@ void testApp::update(){
 	camString = stringstream();
 	mg->addPoint(ofGetFrameRate());
 
-//	onNewFrame(depthStream);
 }
 
 
 //--------------------------------------------------------------
-void testApp::draw(){
-
+void testApp::draw()
+{
 	ofShortPixels* depthPixels = depthPixelsDoubleBuffer[0];
-
 	unsigned short* p = depthPixels->getPixels();
 	for (int i=0; i < depthPixels->size(); i++)
 	{
@@ -60,17 +58,47 @@ void testApp::draw(){
 
 		}
 	}
-
 	depthTexture.loadData(colorPixels);
 
 
 	ofSetHexColor(0xffffff);
 	depthTexture.draw(0,0, depthTexture.getWidth(), depthTexture.getHeight());
 
-	ofCircle(ofPoint(headScreenPos), 10);
+
+
+	if (!userTrackerFrameDeque.empty())
+	{
+
+		userTrackerFrame = userTrackerFrameDeque.front();
+		
+		const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
+		for (int i = 0; i < users.getSize(); ++i)
+		{
+			const nite::UserData& user = users[i];
+			updateUserState(user,userTrackerFrame.getTimestamp());
+			if (user.getState() == nite::USER_STATE_NEW)
+			{
+				userTracker.startSkeletonTracking(user.getId());
+			}
+			else if (user.getSkeleton().getState() == nite::SKELETON_TRACKED)
+			{
+				const nite::SkeletonJoint& head = user.getSkeleton().getJoint(nite::JOINT_HEAD);
+				if (head.getPositionConfidence() > .5)
+				{
+
+					ofVec2f headScreenPos;
+					userTracker.convertJointCoordinatesToDepth(head.getPosition().x,head.getPosition().y,head.getPosition().z,&headScreenPos.x, &headScreenPos.y);
+					ofCircle(ofPoint(headScreenPos), 10);
+					printf("%d. (%5.2f, %5.2f, %5.2f)\n", user.getId(), head.getPosition().x, head.getPosition().y, head.getPosition().z);
+				}
+			}
+		}
+	}
+
+
 
 	ofCircle(mouseX, mouseY,20);
-	
+
 	ofSetHexColor(0x333333);
 	ofDrawBitmapString("fps:" + ofToString(ofGetFrameRate()), 10,10);
 
@@ -146,16 +174,16 @@ int testApp::setupOpenNi()
 		}
 	}
 
-	
-//	stream.readFrame(&frame);
+
+	//	stream.readFrame(&frame);
 
 
 	int w = depthStream.getVideoMode().getResolutionX();
 	int h = depthStream.getVideoMode().getResolutionY();
-	
+
 	depthTexture.allocate(w, h, GL_RGB);
 
-	
+
 	for (int i=0 ; i<2; i++)
 	{
 		depthPixelsDoubleBuffer[i] = new ofShortPixels();
@@ -163,7 +191,7 @@ int testApp::setupOpenNi()
 	}
 	colorPixels.allocate(w, h, OF_IMAGE_COLOR);
 
-//	onNewFrame(depthStream);
+	//	onNewFrame(depthStream);
 
 	return 0;
 
@@ -187,34 +215,24 @@ void testApp::onNewFrame( VideoStream& stream )
 	depthPixelsDoubleBuffer[0] = depthPixelsDoubleBuffer[1];
 	//InterlockedExchangePointer(depthPixelsDoubleBuffer[0],depthPixelsDoubleBuffer[1]);
 
-	
+	//notify face?
+}
+
+void testApp::onNewFrame()
+{
+	nite::UserTrackerFrameRef userTrackerFrame;
 	nite::Status niteRc = userTracker.readFrame(&userTrackerFrame);
 	if (niteRc != NITE_STATUS_OK)
 	{
 		printf("Get next frame failed\n");
 	}
 
-	const nite::Array<nite::UserData>& users = userTrackerFrame.getUsers();
-	for (int i = 0; i < users.getSize(); ++i)
-	{
-		const nite::UserData& user = users[i];
-		updateUserState(user,userTrackerFrame.getTimestamp());
-		if (user.getState() == nite::USER_STATE_NEW)
-		{
-			userTracker.startSkeletonTracking(user.getId());
-		}
-		else if (user.getSkeleton().getState() == nite::SKELETON_TRACKED)
-		{
-			const nite::SkeletonJoint& head = user.getSkeleton().getJoint(nite::JOINT_HEAD);
-			if (head.getPositionConfidence() > .5)
-			{
-				userTracker.convertJointCoordinatesToDepth(head.getPosition().x,head.getPosition().y,head.getPosition().z,&headScreenPos.x, &headScreenPos.y);
-				printf("%d. (%5.2f, %5.2f, %5.2f)\n", user.getId(), head.getPosition().x, head.getPosition().y, head.getPosition().z);
-			}
+	userTrackerFrameDeque.push_front(userTrackerFrame);
 
-		}
+	if (userTrackerFrameDeque.size() > 10)
+	{
+		userTrackerFrameDeque.pop_back();
 	}
-		//notify face?
 }
 
 
@@ -232,10 +250,9 @@ void testApp::exit(){
 	depthStream.destroy();
 	device.close();
 
-	abort(); //avoid crash in tite tracker. TODO remove
 	nite::NiTE::shutdown();
 	OpenNI::shutdown();
-	
+
 }
 
 int testApp::setupNite()
@@ -255,6 +272,8 @@ int testApp::setupNite()
 		printf("Couldn't create user tracker\n");
 		return 3;
 	}
+	userTracker.addListener(this);
+
 
 
 	return 0;
@@ -319,7 +338,7 @@ void testApp::setGUI4()
 	gui4->addSpacer(length-xInit, 2);
 	gui4->addWidgetDown(new ofxUILabel("IMAGE SAMPLER", OFX_UI_FONT_MEDIUM)); 				
 	gui4->addWidgetDown(new ofxUIImageSampler(img->getWidth(), img->getHeight(), img, "SAMPLER"));
-	
+
 	gui4->addWidgetDown(new ofxUIMultiImageButton(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
 	gui4->addWidgetDown(new ofxUIMultiImageToggle(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
 

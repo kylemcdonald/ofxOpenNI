@@ -16,7 +16,7 @@
 #define MAX_DEVICES 2
 #define MAX_HANDS 4
 
-class testApp : public ofBaseApp, public openni::VideoStream::Listener, public openni::OpenNI::Listener
+class testApp : public ofBaseApp, public openni::VideoStream::Listener, public openni::OpenNI::Listener, nite::UserTracker::Listener
 {
 
 public:
@@ -37,6 +37,9 @@ public:
 	void guiEvent(ofxUIEventArgs &e);
 
 	virtual void onNewFrame( openni::VideoStream& stream);
+
+	virtual void onNewFrame();
+
 
 
 private:
@@ -80,9 +83,9 @@ private:
 
 	openni::VideoStream depthStream;
 	openni::Device device;
-
 	
 	ofShortPixels* depthPixelsDoubleBuffer[2];
+
 	ofPixels colorPixels;
 
 	ofTexture depthTexture;
@@ -90,11 +93,8 @@ private:
 	ofTexture texScreen;
 	int counter;
 
-	nite::UserTracker userTracker;
 
 	Scene scene;
-
-
 
 	void setGUI4(); 	    
 	ofxUIScrollableCanvas *gui4;
@@ -106,8 +106,10 @@ private:
 	bool bdrawGrid; 
 	bool bdrawPadding; 
 
-	ofVec2f headScreenPos;
+	deque<nite::UserTrackerFrameRef> userTrackerFrameDeque;
 	nite::UserTrackerFrameRef userTrackerFrame;
+	nite::UserTracker userTracker;
+
 
 
 };
