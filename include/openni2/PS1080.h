@@ -286,7 +286,7 @@ typedef struct XnPixelRegistration
 {
 	unsigned int nDepthX;
 	unsigned int nDepthY;
-	OniDepthPixel nDepthValue;
+	uint16_t nDepthValue;
 	unsigned int nImageXRes;
 	unsigned int nImageYRes;
 	unsigned int nImageX; // out

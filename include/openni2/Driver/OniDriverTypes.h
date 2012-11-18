@@ -23,6 +23,8 @@
 
 #include <OniCTypes.h>
 
+#define ONI_STREAM_PROPERTY_PRIVATE_BASE XN_MAX_UINT16
+
 typedef struct
 {
 	int dataSize;

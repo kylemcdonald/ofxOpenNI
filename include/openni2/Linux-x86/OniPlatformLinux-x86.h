@@ -34,6 +34,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 
 //---------------------------------------------------------------------------
 // Platform Basic Definition

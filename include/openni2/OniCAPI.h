@@ -23,6 +23,7 @@
 
 #include "OniPlatform.h"
 #include "OniCTypes.h"
+#include "OniCProperties.h"
 #include "OniVersion.h"
 
 /******************************************** General APIs */
@@ -48,7 +49,7 @@ ONI_C_API void oniUnregisterDeviceCallbacks(OniCallbackHandle handle);
 ONI_C_API OniStatus oniWaitForAnyStream(OniStreamHandle* pStreams, int numStreams, int* pStreamIndex, int timeout);
 
 /** Get the current version of OpenNI2 */
-ONI_C_API void oniGetVersion(OniVersion* pVersion);
+ONI_C_API OniVersion oniGetVersion();
 
 /** Translate from format to number of bytes per pixel. Will return 0 for formats in which the number of bytes per pixel isn't fixed. */
 ONI_C_API int oniFormatBytesPerPixel(OniPixelFormat format);
@@ -64,13 +65,13 @@ ONI_C_API OniStatus oniDeviceOpen(const char* uri, OniDeviceHandle* pDevice);
 ONI_C_API OniStatus oniDeviceClose(OniDeviceHandle device);
 
 /** Get the possible configurations available for a specific source, or NULL if the source does not exist. */
-ONI_C_API const OniStreamSourceInfo* oniDeviceGetStreamSourceInfo(OniDeviceHandle device, OniStreamSource streamSource);
+ONI_C_API const OniSensorInfo* oniDeviceGetSensorInfo(OniDeviceHandle device, OniSensorType sensorType);
 
 /** Get the OniDeviceInfo of a certain device. */
 ONI_C_API OniStatus oniDeviceGetInfo(OniDeviceHandle device, OniDeviceInfo* pInfo);
 
 /** Create a new stream in the device. The stream will originate from the source. */
-ONI_C_API OniStatus oniDeviceCreateStream(OniDeviceHandle device, OniStreamSource streamSource, OniStreamHandle* pStream);
+ONI_C_API OniStatus oniDeviceCreateStream(OniDeviceHandle device, OniSensorType sensorType, OniStreamHandle* pStream);
 
 ONI_C_API OniStatus oniDeviceEnableDepthColorSync(OniDeviceHandle device);
 ONI_C_API void oniDeviceDisableDepthColorSync(OniDeviceHandle device);
@@ -86,13 +87,15 @@ ONI_C_API OniStatus oniDeviceInvoke(OniDeviceHandle device, int commandId, const
 /** Check if a command is supported, for invoke */
 ONI_C_API OniBool oniDeviceIsCommandSupported(OniDeviceHandle device, int commandId);
 
+ONI_C_API OniBool oniDeviceIsImageRegistrationModeSupported(OniDeviceHandle device, OniImageRegistrationMode mode);
+
 /******************************************** Stream APIs */
 
 /** Destroy an existing stream */
 ONI_C_API void oniStreamDestroy(OniStreamHandle stream);
 
 /** Get the OniSourceInfo of the certain stream. */
-ONI_C_API const OniStreamSourceInfo* oniStreamGetSourceInfo(OniStreamHandle stream);
+ONI_C_API const OniSensorInfo* oniStreamGetSensorInfo(OniStreamHandle stream);
 
 /** Get a handle to the device to which this stream belongs. */
 ONI_C_API OniStatus oniStreamGetDeviceHandle(OniStreamHandle stream, OniDeviceHandle* pDevice);
@@ -180,5 +183,11 @@ ONI_C_API void oniRecorderStop(OniRecorderHandle recorder);
  * @retval ONI_STATUS_ERROR Upon any kind of failure.
  */
 ONI_C_API OniStatus oniRecorderDestroy(OniRecorderHandle* pRecorder);
+
+ONI_C_API OniStatus oniCoordinateConverterDepthToWorld(OniStreamHandle depthStream, float depthX, float depthY, float depthZ, float* pWorldX, float* pWorldY, float* pWorldZ);
+
+ONI_C_API OniStatus oniCoordinateConverterWorldToDepth(OniStreamHandle depthStream, float worldX, float worldY, float worldZ, float* pDepthX, float* pDepthY, float* pDepthZ);
+
+ONI_C_API OniStatus oniCoordinateConverterDepthToColor(OniStreamHandle depthStream, OniStreamHandle colorStream, int depthX, int depthY, OniDepthPixel depthZ, int* pColorX, int* pColorY);
 
 #endif // _ONI_C_API_H_

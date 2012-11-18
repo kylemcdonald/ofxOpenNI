@@ -22,6 +22,7 @@
 #define _ONI_TYPES_H_
 
 #include "OniPlatform.h"
+#include "OniCEnums.h"
 
 /** Basic types **/
 typedef int OniBool;
@@ -34,21 +35,10 @@ typedef int OniBool;
 #endif //FALSE
 
 #define ONI_MAX_STR 256
-#define ONI_MAX_SOURCES 10
+#define ONI_MAX_SENSORS 10
 
 struct OniCallbackHandleImpl;
 typedef struct OniCallbackHandleImpl* OniCallbackHandle;
-
-/** Possible failure values */
-typedef enum
-{
-	ONI_STATUS_OK,
-	ONI_STATUS_ERROR,
-	ONI_STATUS_NOT_IMPLEMENTED,
-	ONI_STATUS_NOT_SUPPORTED,
-	ONI_STATUS_BAD_PARAMETER,
-	ONI_STATUS_OUT_OF_FLOW
-} OniStatus;
 
 /** Hold a version */
 typedef struct  
@@ -61,57 +51,23 @@ typedef struct
 
 typedef int OniHardwareVersion;
 
-/** The source of the stream */
-typedef enum
-{
-	ONI_STREAM_SOURCE_IR = 1,
-	ONI_STREAM_SOURCE_IR_LEFT = ONI_STREAM_SOURCE_IR,
-	ONI_STREAM_SOURCE_IR_RIGHT,
-
-	ONI_STREAM_SOURCE_COLOR,
-	ONI_STREAM_SOURCE_COLOR_LEFT = ONI_STREAM_SOURCE_COLOR,
-	ONI_STREAM_SOURCE_COLOR_RIGHT,
-
-	ONI_STREAM_SOURCE_DEPTH
-} OniStreamSource;
-
-/** All available formats of the output of a stream */
-typedef enum
-{
-	// Depth
-	ONI_PIXEL_FORMAT_DEPTH_1_MM = 100,
-	ONI_PIXEL_FORMAT_DEPTH_100_UM = 101,
-	ONI_PIXEL_FORMAT_SHIFT_9_2 = 102,
-	ONI_PIXEL_FORMAT_SHIFT_9_3 = 103,
-
-	// Color
-	ONI_PIXEL_FORMAT_RGB888 = 200,
-	ONI_PIXEL_FORMAT_YUV422 = 201,
-	ONI_PIXEL_FORMAT_GRAY8 = 202,
-	ONI_PIXEL_FORMAT_GRAY16 = 203,
-	ONI_PIXEL_FORMAT_JPEG = 204,
-
-	// Custom
-	ONI_PIXEL_FORMAT_PRIVATE_BASE = 65536,
-
-} OniPixelFormat;
 
 /** Description of the output: format and resolution */
 typedef struct  
 {
 	OniPixelFormat pixelFormat;
-	int xResolution;
-	int yResolution;
+	int resolutionX;
+	int resolutionY;
 	int fps;
 } OniVideoMode;
 
 /** List of supported video modes by a specific source */
 typedef struct
 {
-	OniStreamSource streamSource;
+	OniSensorType sensorType;
 	int numSupportedVideoModes;
 	OniVideoMode *pSupportedVideoModes;
-} OniStreamSourceInfo;
+} OniSensorInfo;
 
 /** Basic description of a device */
 typedef struct
@@ -119,8 +75,8 @@ typedef struct
 	char uri[ONI_MAX_STR];
 	char vendor[ONI_MAX_STR];
 	char name[ONI_MAX_STR];
-	unsigned short usbVendorId;
-	unsigned short usbProductId;
+	uint16_t usbVendorId;
+	uint16_t usbProductId;
 } OniDeviceInfo;
 
 /** Default device */
@@ -141,8 +97,8 @@ typedef struct
 	int dataSize;
 	void* data;
 
-	OniStreamSource streamSource;
-	unsigned long long timestamp;
+	OniSensorType sensorType;
+	uint64_t timestamp;
 	int frameIndex;
 
 	int width;
@@ -150,18 +106,11 @@ typedef struct
 
 	OniVideoMode videoMode;
 	OniBool croppingEnabled;
-	int cropXOrigin;
-	int cropYOrigin;
+	int cropOriginX;
+	int cropOriginY;
 
 	int stride;
 } OniFrame;
-
-typedef enum
-{
-	DEVICE_STATE_OK,
-	DEVICE_STATE_ERROR,
-	DEVICE_STATE_NOT_READY
-} OniDeviceState;
 
 typedef void (ONI_CALLBACK_TYPE* OniNewFrameCallback)(OniStreamHandle stream, void* pCookie);
 typedef void (ONI_CALLBACK_TYPE* OniGeneralCallback)(void* pCookie);
@@ -175,12 +124,6 @@ typedef struct
 	OniDeviceStateCallback		deviceStateChanged;
 } OniDeviceCallbacks;
 
-typedef enum
-{
-	ONI_IMAGE_REGISTRATION_OFF				= 0,
-	ONI_IMAGE_REGISTRATION_DEPTH_TO_IMAGE,
-} OniImageRegistrationMode;
-
 typedef struct  
 {
 	int enabled;
@@ -190,13 +133,12 @@ typedef struct
 	int height;
 } OniCropping;
 
-static const int ONI_TIMEOUT_NONE = 0;
-static const int ONI_TIMEOUT_FOREVER = -1;
-
 // Pixel types
-typedef unsigned short OniDepthPixel;
+typedef uint16_t OniDepthPixel;
 
-typedef unsigned short OniGrayscale16Pixel;
+typedef uint16_t OniGrayscale16Pixel;
+
+#pragma pack (push, 1)
 
 typedef struct  
 {
@@ -204,6 +146,8 @@ typedef struct
 	char g;
 	char b;
 } OniRGB888Pixel;
+
+#pragma pack (pop)
 
 typedef struct
 {

@@ -6,7 +6,7 @@
 *******************************************************************************/
 
 #include <OniPlatform.h>
-#include <OpenNI.h>
+#include <OniCAPI.h>
 #include "NiteCTypes.h"
 #include "NiteVersion.h"
 
@@ -20,16 +20,16 @@
 NITE_API NiteStatus niteInitialize();
 NITE_API void niteShutdown();
 
-NITE_API void niteGetVersion(OniVersion*);
+NITE_API NiteVersion niteGetVersion();
 
 // UserTracker
 NITE_API NiteStatus niteInitializeUserTracker(NiteUserTrackerHandle*);
-NITE_API NiteStatus niteInitializeUserTrackerByDevice(openni::Device*, NiteUserTrackerHandle*);
+NITE_API NiteStatus niteInitializeUserTrackerByDevice(void*, NiteUserTrackerHandle*);
 NITE_API NiteStatus niteShutdownUserTracker(NiteUserTrackerHandle);
 
 NITE_API NiteStatus niteStartSkeletonTracking(NiteUserTrackerHandle, NiteUserId);
 NITE_API void niteStopSkeletonTracking(NiteUserTrackerHandle, NiteUserId);
-NITE_API OniBool niteIsSkeletonTracking(NiteUserTrackerHandle, NiteUserId);
+NITE_API bool niteIsSkeletonTracking(NiteUserTrackerHandle, NiteUserId);
 
 NITE_API NiteStatus niteSetSkeletonSmoothing(NiteUserTrackerHandle, float);
 NITE_API NiteStatus niteGetSkeletonSmoothing(NiteUserTrackerHandle, float*);
@@ -44,7 +44,7 @@ NITE_API NiteStatus niteUserTrackerFrameRelease(NiteUserTrackerHandle, NiteUserT
 
 // HandTracker
 NITE_API NiteStatus niteInitializeHandTracker(NiteHandTrackerHandle*);
-NITE_API NiteStatus niteInitializeHandTrackerByDevice(openni::Device*, NiteHandTrackerHandle*);
+NITE_API NiteStatus niteInitializeHandTrackerByDevice(void*, NiteHandTrackerHandle*);
 NITE_API NiteStatus niteShutdownHandTracker(NiteHandTrackerHandle);
 
 NITE_API NiteStatus niteStartHandTracking(NiteHandTrackerHandle, const NitePoint3f*, NiteHandId* pNewHandId);

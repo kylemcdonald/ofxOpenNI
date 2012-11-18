@@ -17,50 +17,66 @@
 *  See the License for the specific language governing permissions and       *
 *  limitations under the License.                                            *
 *                                                                            *
-*****************************************************************************/
-#ifndef _ONI_PROPERTIES_H_
-#define _ONI_PROPERTIES_H_
+*****************************************************************************/#ifndef _ONI_ENUMS_H_
+#define _ONI_ENUMS_H_
 
 namespace openni
 {
 
-// Device properties
-enum
+/** Possible failure values */
+typedef enum
 {
-	DEVICE_PROPERTY_FIRMWARE_VERSION		= 0, // By implementation
-	DEVICE_PROPERTY_DRIVER_VERSION		= 1, // OniVersion
-	DEVICE_PROPERTY_HARDWARE_VERSION		= 2, // int
-	DEVICE_PROPERTY_SERIAL_NUMBER		= 3, // string
-	DEVICE_PROPERTY_ERROR_STATE			= 4, // ??
-	DEVICE_PROPERTY_IMAGE_REGISTRATION		= 5, // OniImageRegistrationMode
+	STATUS_OK,
+	STATUS_ERROR,
+	STATUS_NOT_IMPLEMENTED,
+	STATUS_NOT_SUPPORTED,
+	STATUS_BAD_PARAMETER,
+	STATUS_OUT_OF_FLOW,
+	STATUS_NO_DEVICE
+} Status;
 
-	// Files
-	DEVICE_PROPERTY_PLAYBACK_SPEED		= 100, // float
-	DEVICE_PROPERTY_PLAYBACK_REPEAT_ENABLED			= 101, // OniBool
-};
-
-// Stream properties
-enum
+/** The source of the stream */
+typedef enum
 {
-	STREAM_PROPERTY_CROPPING			= 0, // OniCropping*
-	STREAM_PROPERTY_HORIZONTAL_FOV		= 1, // float: radians
-	STREAM_PROPERTY_VERTICAL_FOV		= 2, // float: radians
-	STREAM_PROPERTY_VIDEO_MODE			= 3, // OniVideoMode*
+	SENSOR_IR = 1,
+	SENSOR_COLOR,
+	SENSOR_DEPTH
 
-	STREAM_PROPERTY_MAX_VALUE			= 4, // int
-	STREAM_PROPERTY_MIN_VALUE			= 5, // int
+} SensorType;
 
-	STREAM_PROPERTY_STRIDE			= 6, // int
-	STREAM_PROPERTY_MIRRORING			= 7, // OniBool
-
-	STREAM_PROPERTY_NUMBER_OF_FRAMES		= 8, // int
-};
-
-// Device commands (for Invoke)
-enum
+/** All available formats of the output of a stream */
+typedef enum
 {
-	DEVICE_COMMAND_SEEK				= 1, // OniSeek
-};
+	// Depth
+	PIXEL_FORMAT_DEPTH_1_MM = 100,
+	PIXEL_FORMAT_DEPTH_100_UM = 101,
+	PIXEL_FORMAT_SHIFT_9_2 = 102,
+	PIXEL_FORMAT_SHIFT_9_3 = 103,
+
+	// Color
+	PIXEL_FORMAT_RGB888 = 200,
+	PIXEL_FORMAT_YUV422 = 201,
+	PIXEL_FORMAT_GRAY8 = 202,
+	PIXEL_FORMAT_GRAY16 = 203,
+	PIXEL_FORMAT_JPEG = 204,
+} PixelFormat;
+
+typedef enum
+{
+	DEVICE_STATE_OK,
+	DEVICE_STATE_ERROR,
+	DEVICE_STATE_NOT_READY
+} DeviceState;
+
+typedef enum
+{
+	IMAGE_REGISTRATION_OFF				= 0,
+	IMAGE_REGISTRATION_DEPTH_TO_COLOR,
+} ImageRegistrationMode;
+
+static const int TIMEOUT_NONE = 0;
+static const int TIMEOUT_FOREVER = -1;
 
 } // namespace openni
-#endif // _ONI_PROPERTIES_H_
+
+#endif // _ONI_ENUMS_H_

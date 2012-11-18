@@ -16,7 +16,7 @@
 #define MAX_DEVICES 2
 #define MAX_HANDS 4
 
-class testApp : public ofBaseApp, public openni::Stream::Listener, public openni::OpenNI::Listener
+class testApp : public ofBaseApp, public openni::VideoStream::Listener, public openni::OpenNI::Listener
 {
 
 public:
@@ -26,7 +26,7 @@ public:
 	void draw();
 	void exit();
 
-	void keyPressed  (int key);
+	void keyPressed(int key);
 	void keyReleased(int key);
 	void mouseMoved(int x, int y );
 	void mouseDragged(int x, int y, int button);
@@ -36,7 +36,7 @@ public:
 
 	void guiEvent(ofxUIEventArgs &e);
 
-	virtual void onNewFrame( openni::Stream& stream);
+	virtual void onNewFrame( openni::VideoStream& stream);
 
 
 private:
@@ -76,9 +76,9 @@ private:
 	deque<ofVec2f> screenPointHistory;
 
 private:
-	openni::FrameRef frame;
+	openni::VideoFrameRef frame;
 
-	openni::Stream depthStream;
+	openni::VideoStream depthStream;
 	openni::Device device;
 
 	

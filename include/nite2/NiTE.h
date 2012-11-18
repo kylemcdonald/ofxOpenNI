@@ -14,12 +14,11 @@
 // Summary of use cases, modules, facades
 
 namespace nite {
+#include "NiteEnums.h"
 
 // General
-typedef openni::Version Version;
-typedef openni::Bool Bool;
+typedef NiteVersion Version;
 
-typedef NiteStatus Status;
 class Point3f : public NitePoint3f
 {
 public:
@@ -49,11 +48,11 @@ public:
 
 		return *this;
 	}
-	Bool operator==(const Point3f& other) const
+	bool operator==(const Point3f& other) const
 	{
 		return x == other.x && y == other.y && z == other.z;
 	}
-	Bool operator!=(const Point3f& other) const
+	bool operator!=(const Point3f& other) const
 	{
 		return !operator==(other);
 	}
@@ -95,8 +94,8 @@ public:
 	BoundingBox();
 	BoundingBox(const Point3f& min, const Point3f& max)
 	{
-		mins = min;
-		maxs = max;
+		this->min = min;
+		this->max = max;
 	}
 };
 
@@ -119,9 +118,6 @@ private:
 
 // UserTracker
 typedef NiteUserId UserId;
-typedef NiteSkeletonState SkeletonState;
-typedef NiteUserState UserState;
-typedef NiteJointType JointType;
 
 class UserMap : private NiteUserMap
 {
@@ -137,7 +133,7 @@ public:
 class SkeletonJoint : private NiteSkeletonJoint
 {
 public:
-	JointType getType() const {return jointType;}
+	JointType getType() const {return (JointType)jointType;}
 	const Point3f& getPosition() const {return (Point3f&)position;}
 	float getPositionConfidence() const {return positionConfidence;}
 	const Quaternion& getOrientation() const {return (Quaternion&)orientation;}
@@ -147,7 +143,7 @@ class Skeleton : private NiteSkeleton
 {
 public:
 	const SkeletonJoint& getJoint(JointType type) const {return (SkeletonJoint&)joints[type];}
-	SkeletonState getState() const {return state;}
+	SkeletonState getState() const {return (SkeletonState)state;}
 };
 class UserData : private NiteUserData
 {
@@ -155,7 +151,7 @@ public:
 	UserId getId() const {return id;}
 	const BoundingBox& getBoundingBox() const {return (BoundingBox&)boundingBox;}
 	const Point3f& getCenterOfMass() const {return (Point3f&)centerOfMass;}
-	UserState getState() const {return state;}
+	UserState getState() const {return (UserState)state;}
 
 	const Skeleton& getSkeleton() const {return (Skeleton&)skeleton;}
 };
@@ -188,10 +184,10 @@ public:
 	float getFloorConfidence() const {return m_pFrame->floorConfidence;}
 	const Plane& getFloor() const {return (const Plane&)m_pFrame->floor;}
 
-	openni::FrameRef getDepthFrame() {return m_depthFrame;}
+	openni::VideoFrameRef getDepthFrame() {return m_depthFrame;}
 	const UserMap& getUserMap() const {return static_cast<const UserMap&>(m_pFrame->userMap);}
-	unsigned long long getTimestamp() const {return m_pFrame->timestamp;}
-	int getIndex() const {return m_pFrame->frameIndex;}
+	uint64_t getTimestamp() const {return m_pFrame->timestamp;}
+	int getFrameIndex() const {return m_pFrame->frameIndex;}
 private:
 	friend class User;
 	friend class UserTracker;
@@ -219,7 +215,7 @@ private:
 
 	NiteUserTrackerFrame* m_pFrame;
 	NiteUserTrackerHandle m_scene;
-	openni::FrameRef m_depthFrame;
+	openni::VideoFrameRef m_depthFrame;
 };
 
 /**
@@ -274,22 +270,22 @@ public:
 	{
 		if (pDevice == NULL)
 		{
-			return niteInitializeUserTracker(&m_sceneHandle);
+			return (Status)niteInitializeUserTracker(&m_sceneHandle);
 		}
-		return niteInitializeUserTrackerByDevice(pDevice, &m_sceneHandle);
+		return (Status)niteInitializeUserTrackerByDevice(pDevice, &m_sceneHandle);
 	}
 
 	/** Get the next snapshot of the algorithm */
 	Status readFrame(UserTrackerFrameRef* pFrame)
 	{
 		NiteUserTrackerFrame *pNiteFrame = NULL;
-		Status rc = niteReadUserTrackerFrame(m_sceneHandle, &pNiteFrame);
+		Status rc = (Status)niteReadUserTrackerFrame(m_sceneHandle, &pNiteFrame);
 		pFrame->setReference(m_sceneHandle, pNiteFrame);
 
 		return rc;
 	}
 
-	Bool isValid() const
+	bool isValid() const
 	{
 		return m_sceneHandle != NULL;
 	}
@@ -297,13 +293,13 @@ public:
 	/** Control the smoothing factor of the skeleton joints */
 	Status setSkeletonSmoothingFactor(float factor)
 	{
-		return niteSetSkeletonSmoothing(m_sceneHandle, factor);
+		return (Status)niteSetSkeletonSmoothing(m_sceneHandle, factor);
 	}
 	float getSkeletonSmoothingFactor() const
 	{
 		float factor;
-		Status rc = niteGetSkeletonSmoothing(m_sceneHandle, &factor);
-		if (rc != NITE_STATUS_OK)
+		Status rc = (Status)niteGetSkeletonSmoothing(m_sceneHandle, &factor);
+		if (rc != STATUS_OK)
 		{
 			factor = 0;
 		}
@@ -313,7 +309,7 @@ public:
 	/** Request a skeleton for a specific user */
 	Status startSkeletonTracking(UserId id)
 	{
-		return niteStartSkeletonTracking(m_sceneHandle, id);
+		return (Status)niteStartSkeletonTracking(m_sceneHandle, id);
 	}
 	/** Inform the algorithm that a skeleton is no longer required for a specific user */
 	void stopSkeletonTracking(UserId id)
@@ -339,7 +335,7 @@ public:
 	*/
 	Status convertJointCoordinatesToDepth(float x, float y, float z, float* pOutX, float* pOutY)
 	{
-		return niteConvertJointCoordinatesToDepth(m_sceneHandle, x, y, z, pOutX, pOutY);
+		return (Status)niteConvertJointCoordinatesToDepth(m_sceneHandle, x, y, z, pOutX, pOutY);
 	}
 	/**
 	Skeleton joint position is provided in a different set of coordinates than the depth coordinates.
@@ -348,7 +344,7 @@ public:
 	*/
 	Status convertDepthCoordinatesToJoint(int x, int y, int z, float* pOutX, float* pOutY)
 	{
-		return niteConvertDepthCoordinatesToJoint(m_sceneHandle, x, y, z, pOutX, pOutY);
+		return (Status)niteConvertDepthCoordinatesToJoint(m_sceneHandle, x, y, z, pOutX, pOutY);
 	}
 
 private:
@@ -358,16 +354,13 @@ private:
 
 // HandTracker
 typedef NiteHandId HandId;
-typedef NiteGestureType GestureType;
-typedef NiteGestureState GestureState;
-typedef NiteHandState HandState;
 
 class GestureData : protected NiteGestureData
 {
 public:
-	GestureType getType() const {return type;}
+	GestureType getType() const {return (GestureType)type;}
 	const Point3f& getCurrentPosition() const {return (Point3f&)currentPosition;}
-	GestureState getState() const {return state;}
+	GestureState getState() const {return (GestureState)state;}
 };
 
 class HandData : protected NiteHandData
@@ -375,7 +368,7 @@ class HandData : protected NiteHandData
 public:
 	HandId getId() const {return id;}
 	const Point3f& getPosition() const {return (Point3f&)position;}
-	HandState getState() const {return state;}
+	HandState getState() const {return (HandState)state;}
 };
 
 /** Snapshot of the Hand Tracker algorithm. It holds all the hands identified at this time, as well as the detected gestures */
@@ -404,13 +397,13 @@ public:
 	const Array<HandData>& getHands() const {return m_hands;}
 	const Array<GestureData>& getGestures() const {return m_gestures;}
 
-	openni::FrameRef getDepthFrame() const
+	openni::VideoFrameRef getDepthFrame() const
 	{
 		return m_depthFrame;
 	}
 
-	unsigned long long getTimestamp() const {return m_pFrame->timestamp;}
-	int getIndex() const {return m_pFrame->frameIndex;}
+	uint64_t getTimestamp() const {return m_pFrame->timestamp;}
+	int getFrameIndex() const {return m_pFrame->frameIndex;}
 private:
 	friend class HandTracker;
 
@@ -437,7 +430,7 @@ private:
 
 	NiteHandTrackerFrame* m_pFrame;
 	NiteHandTrackerHandle m_handTracker;
-	openni::FrameRef m_depthFrame;
+	openni::VideoFrameRef m_depthFrame;
 
 	Array<HandData> m_hands;
 	Array<GestureData> m_gestures;
@@ -488,23 +481,23 @@ public:
 	{
 		if (pDevice == NULL)
 		{
-			return niteInitializeHandTracker(&m_handTrackerHandle);
+			return (Status)niteInitializeHandTracker(&m_handTrackerHandle);
 			// Pick a device
 		}
-		return niteInitializeHandTrackerByDevice(pDevice, &m_handTrackerHandle);
+		return (Status)niteInitializeHandTrackerByDevice(pDevice, &m_handTrackerHandle);
 	}
 
 	/** Get the next snapshot of the algorithm */
 	Status readFrame(HandTrackerFrameRef* pFrame)
 	{
 		NiteHandTrackerFrame *pNiteFrame = NULL;
-		Status rc = niteReadHandTrackerFrame(m_handTrackerHandle, &pNiteFrame);
+		Status rc = (Status)niteReadHandTrackerFrame(m_handTrackerHandle, &pNiteFrame);
 		pFrame->setReference(m_handTrackerHandle, pNiteFrame);
 
 		return rc;
 	}
 
-	Bool isValid() const
+	bool isValid() const
 	{
 		return m_handTrackerHandle != NULL;
 	}
@@ -512,13 +505,13 @@ public:
 	/** Control the smoothing factor of the skeleton joints */
 	Status setSmoothingFactor(float factor)
 	{
-		return niteSetHandSmoothingFactor(m_handTrackerHandle, factor);
+		return (Status)niteSetHandSmoothingFactor(m_handTrackerHandle, factor);
 	}
 	float getSmoothingFactor() const
 	{
 		float factor;
-		Status rc = niteGetHandSmoothingFactor(m_handTrackerHandle, &factor);
-		if (rc != NITE_STATUS_OK)
+		Status rc = (Status)niteGetHandSmoothingFactor(m_handTrackerHandle, &factor);
+		if (rc != STATUS_OK)
 		{
 			factor = 0;
 		}
@@ -531,7 +524,7 @@ public:
 	*/
 	Status startHandTracking(const Point3f& position, HandId* pNewHandId)
 	{
-		return niteStartHandTracking(m_handTrackerHandle, (const NitePoint3f*)&position, pNewHandId);
+		return (Status)niteStartHandTracking(m_handTrackerHandle, (const NitePoint3f*)&position, pNewHandId);
 	}
 	/** Inform the algorithm that a specific hand is no longer required */
 	void stopHandTracking(HandId id)
@@ -553,12 +546,12 @@ public:
 	/** Start detecting a specific gesture */
 	Status startGestureDetection(GestureType type)
 	{
-		return niteStartGestureDetection(m_handTrackerHandle, type);
+		return (Status)niteStartGestureDetection(m_handTrackerHandle, (NiteGestureType)type);
 	}
 	/** Stop detecting a specific gesture */
 	void stopGestureDetection(GestureType type)
 	{
-		niteStopGestureDetection(m_handTrackerHandle, type);
+		niteStopGestureDetection(m_handTrackerHandle, (NiteGestureType)type);
 	}
 
 	/**
@@ -568,7 +561,7 @@ public:
 	*/
 	Status convertHandCoordinatesToDepth(float x, float y, float z, float* pOutX, float* pOutY)
 	{
-		return niteConvertHandCoordinatesToDepth(m_handTrackerHandle, x, y, z, pOutX, pOutY);
+		return (Status)niteConvertHandCoordinatesToDepth(m_handTrackerHandle, x, y, z, pOutX, pOutY);
 	}
 	/**
 	Hand position is provided in a different set of coordinates than the depth coordinates.
@@ -577,7 +570,7 @@ public:
 	*/
 	Status convertDepthCoordinatesToHand(int x, int y, int z, float* pOutX, float* pOutY)
 	{
-		return niteConvertDepthCoordinatesToHand(m_handTrackerHandle, x, y, z, pOutX, pOutY);
+		return (Status)niteConvertDepthCoordinatesToHand(m_handTrackerHandle, x, y, z, pOutX, pOutY);
 	}
 
 private:
@@ -593,16 +586,16 @@ class NiTE
 public:
 	static Status initialize()
 	{
-		return niteInitialize();
+		return (Status)niteInitialize();
 	}
 	static void shutdown()
 	{
 		niteShutdown();
 	}
 
-	static void getVersion(Version* version)
+	static Version getVersion()
 	{
-		return niteGetVersion(version);
+		return niteGetVersion();
 	}
 private:
 	NiTE();

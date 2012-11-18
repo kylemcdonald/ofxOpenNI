@@ -18,61 +18,55 @@
 *  limitations under the License.                                            *
 *                                                                            *
 *****************************************************************************/
-#ifndef _OPEN_NI_HPP_
-#define _OPEN_NI_HPP_
+#ifndef _OPENNI_H_
+#define _OPENNI_H_
 
-#include <math.h>
-#include "OniCAPI.h"
+#include "OniPlatform.h"
 #include "OniProperties.h"
+#include "OniEnums.h"
+
+#include "OniCAPI.h"
+#include "OniCProperties.h"
 
 /**
 openni is the namespace of the entire C++ API of OpenNI
 */
 namespace openni
 {
-
-// enums
-typedef OniStatus					Status;
-typedef OniStreamSource				StreamSource;
-typedef OniPixelFormat				PixelFormat;
-typedef OniImageRegistrationMode	ImageRegistrationMode;
-typedef OniDeviceState				DeviceState;
-
 // primitives
-typedef OniBool						Bool;
 typedef OniDepthPixel				DepthPixel;
 typedef OniGrayscale16Pixel			Grayscale16Pixel;
 
 // structs
 typedef OniVersion					Version;
 typedef OniRGB888Pixel				RGB888Pixel;
-typedef OniYUV422DoublePixel			YUV422DoublePixel;
+typedef OniYUV422DoublePixel		YUV422DoublePixel;
 
 template<class T>
 class Array
 {
 public:
-	Array() : m_data(NULL), m_count(0), m_owner(FALSE) {}
-	Array(const T* data, int count) : m_owner(FALSE) { setData(data, count); }
+	Array() : m_data(NULL), m_count(0), m_owner(false) {}
+	Array(const T* data, int count) : m_owner(false) { setData(data, count); }
 	~Array()
 	{
 		clear();
 	}
 
-	void setData(const T* data, int count)
+	void setData(const T* data, int count, bool isOwner = false)
 	{
 		clear();
-		m_data = data;
 		m_count = count;
-		m_owner = FALSE;
-	}
-	void copyData(const T* data, int count)
-	{
-		clear();
-		m_data = new T[count];
-		m_count = count;
-		m_owner = TRUE;
-		memcpy((void*)m_data, data, count*sizeof(T));
+		m_owner = isOwner;
+		if (!isOwner)
+		{
+			m_data = data;
+		}
+		else
+		{
+			m_data = new T[count];
+			memcpy((void*)m_data, data, count*sizeof(T));
+		}
 	}
 
 	int getSize() const { return m_count; }
@@ -85,14 +79,14 @@ private:
 	{
 		if (m_owner && m_data != NULL)
 			delete []m_data;
-		m_owner = FALSE;
+		m_owner = false;
 		m_data = NULL;
 		m_count = 0;
 	}
 
 	const T* m_data;
 	int m_count;
-	Bool m_owner;
+	bool m_owner;
 };
 
 class VideoMode : private OniVideoMode
@@ -107,46 +101,46 @@ public:
 	VideoMode& operator=(const VideoMode& other)
 	{
 		setPixelFormat(other.getPixelFormat());
-		setResolution(other.getXResolution(), other.getYResolution());
+		setResolution(other.getResolutionX(), other.getResolutionY());
 		setFps(other.getFps());
 
 		return *this;
 	}
 
-	PixelFormat getPixelFormat() const { return pixelFormat; }
-	int getXResolution() const { return xResolution; }
-	int getYResolution() const {return yResolution;}
+	PixelFormat getPixelFormat() const { return (PixelFormat)pixelFormat; }
+	int getResolutionX() const { return resolutionX; }
+	int getResolutionY() const {return resolutionY;}
 	int getFps() const { return fps; }
 
-	void setPixelFormat(PixelFormat format) { this->pixelFormat = format; }
-	void setResolution(int xResolution, int yResolution) 
+	void setPixelFormat(PixelFormat format) { this->pixelFormat = (OniPixelFormat)format; }
+	void setResolution(int resolutionX, int resolutionY) 
 	{ 
-		this->xResolution = xResolution;
-		this->yResolution = yResolution;
+		this->resolutionX = resolutionX;
+		this->resolutionY = resolutionY;
 	}
 	void setFps(int fps) { this->fps = fps; }
 
-	friend class StreamSourceInfo;
-	friend class Stream;
-	friend class FrameRef;
+	friend class SensorInfo;
+	friend class VideoStream;
+	friend class VideoFrameRef;
 };
 
-class StreamSourceInfo
+class SensorInfo
 {
 public:
-	StreamSource getSourceType() const { return m_pInfo->streamSource; }
+	SensorType getSensorType() const { return (SensorType)m_pInfo->sensorType; }
 	const Array<VideoMode>& getSupportedVideoModes() const { return m_videoModes; }
 
 private:
-	StreamSourceInfo(const StreamSourceInfo&);
-	StreamSourceInfo& operator=(const StreamSourceInfo&);
+	SensorInfo(const SensorInfo&);
+	SensorInfo& operator=(const SensorInfo&);
 
-	StreamSourceInfo() : m_pInfo(NULL), m_videoModes(NULL, 0) {}
-	StreamSourceInfo(const OniStreamSourceInfo* pInfo) : m_pInfo(NULL), m_videoModes(NULL, 0)
+	SensorInfo() : m_pInfo(NULL), m_videoModes(NULL, 0) {}
+	SensorInfo(const OniSensorInfo* pInfo) : m_pInfo(NULL), m_videoModes(NULL, 0)
 	{
 		_setInternal(pInfo);
 	}
-	void _setInternal(const OniStreamSourceInfo* pInfo)
+	void _setInternal(const OniSensorInfo* pInfo)
 	{
 		m_pInfo = pInfo;
 		if (pInfo == NULL)
@@ -159,10 +153,10 @@ private:
 		}
 	}
 
-	const OniStreamSourceInfo* m_pInfo;
+	const OniSensorInfo* m_pInfo;
 	Array<VideoMode> m_videoModes;
 
-	friend class Stream;
+	friend class VideoStream;
 	friend class Device;
 };
 
@@ -172,8 +166,8 @@ public:
 	const char* getUri() const { return uri; }
 	const char* getVendor() const { return vendor; }
 	const char* getName() const { return name; }
-	unsigned short getUsbVendorId() const { return usbVendorId; }
-	unsigned short getUsbProductId() const { return usbProductId; }
+	uint16_t getUsbVendorId() const { return usbVendorId; }
+	uint16_t getUsbProductId() const { return usbProductId; }
 
 	friend class DeviceInfoList;
 	friend class Device;
@@ -183,28 +177,28 @@ public:
 /**
 The Frame class encapsulates a specific frame - the output of a Stream at a specific time.
 */
-class FrameRef
+class VideoFrameRef
 {
 public:
 	/** Create a new Frame object. This object will be invalid, until initialized by a Stream object.*/
-	FrameRef()
+	VideoFrameRef()
 	{
 		m_pFrame = NULL;
 	}
 
 	/** Destroy this frame. Release the internal OniFrame, if it is valid. */
-	~FrameRef()
+	~VideoFrameRef()
 	{
 		release();	
 	}
 
-	FrameRef(const FrameRef& other) : m_pFrame(NULL)
+	VideoFrameRef(const VideoFrameRef& other) : m_pFrame(NULL)
 	{
 		_setFrame(other.m_pFrame);
 	}
 
 	/** Make this Frame object refer to the same internal OniFrame as another Frame object */
-	FrameRef& operator=(const FrameRef& other)
+	VideoFrameRef& operator=(const VideoFrameRef& other)
 	{
 		_setFrame(other.m_pFrame);
 		return *this;
@@ -220,9 +214,9 @@ public:
 		return m_pFrame->data;
 	}
 
-	inline StreamSource getSourceType() const
+	inline SensorType getSensorType() const
 	{
-		return m_pFrame->streamSource;
+		return (SensorType)m_pFrame->sensorType;
 	}
 
 	inline const VideoMode& getVideoMode() const
@@ -230,12 +224,12 @@ public:
 		return static_cast<const VideoMode&>(m_pFrame->videoMode);
 	}
 
-	inline unsigned long long getTimestamp() const 
+	inline uint64_t getTimestamp() const 
 	{
 		return m_pFrame->timestamp;
 	}
 
-	inline int getIndex() const
+	inline int getFrameIndex() const
 	{
 		return m_pFrame->frameIndex;
 	}
@@ -250,28 +244,28 @@ public:
 		return m_pFrame->height;
 	}
 
-	inline Bool isCroppingEnabled() const
+	inline bool getCroppingEnabled() const
 	{
-		return m_pFrame->croppingEnabled;
+		return m_pFrame->croppingEnabled == TRUE;
 	}
 
-	inline int getCropXOrigin() const
+	inline int getCropOriginX() const
 	{
-		return m_pFrame->cropXOrigin;
+		return m_pFrame->cropOriginX;
 	}
 
-	inline int getCropYOrigin() const
+	inline int getCropOriginY() const
 	{
-		return m_pFrame->cropYOrigin;
+		return m_pFrame->cropOriginY;
 	}
 
-	inline int getStride() const
+	inline int getStrideInBytes() const
 	{
 		return m_pFrame->stride;
 	}
 
 	/** Check if internal frame is valid - if it actually points to any OniFrame object */
-	inline Bool isValid() const
+	inline bool isValid() const
 	{
 		return m_pFrame != NULL;
 	}
@@ -300,7 +294,7 @@ public:
 	}
 
 private:
-	friend class Stream;
+	friend class VideoStream;
 	inline void setReference(OniFrame* pFrame)
 	{
 		// Initial - don't addref. This is the reference from OpenNI
@@ -316,7 +310,7 @@ The Stream object encapsulates a specific stream.
 This stream has a specific video mode (see VideoMode), and one can get Frame objects from it when the device has them.
 */
 class Device;
-class Stream
+class VideoStream
 {
 public:
 	/**
@@ -335,12 +329,12 @@ public:
 		/**
 		Handle the event that the Stream object has a new Frame available
 		*/
-		virtual void onNewFrame(Stream&) {}
+		virtual void onNewFrame(VideoStream&) {}
 
 	private:
 		OniNewFrameCallback m_newFrameCallback;
 
-		friend class Stream;
+		friend class VideoStream;
 		OniNewFrameCallback getNewFrameCallback()
 		{
 			return m_newFrameCallback;
@@ -356,7 +350,7 @@ public:
 		static void ONI_CALLBACK_TYPE newFrame_Callback(OniStreamHandle streamHandle, void* pCookie)
 		{
 			Listener* pCallbacks = (Listener*)pCookie;
-			Stream stream;
+			VideoStream stream;
 			stream._setHandle(streamHandle);
 			pCallbacks->onNewFrame(stream);
 			stream._setHandle(NULL);
@@ -367,10 +361,10 @@ public:
 	/**
 	Create a Stream object. This object will be invalid, until it is initialized by the Device object, using its CreateStream API
 	*/
-	Stream() : m_stream(NULL), m_streamSourceInfo()
+	VideoStream() : m_stream(NULL), m_sensorInfo()
 	{}
 
-	~Stream()
+	~VideoStream()
 	{
 		destroy();
 	}
@@ -378,7 +372,7 @@ public:
 	/**
 	Check if this object currently points to a valid stream
 	*/
-	Bool isValid() const
+	bool isValid() const
 	{
 		return m_stream != NULL;
 	}
@@ -386,7 +380,7 @@ public:
 	/**
 	Create a new stream from a device, using a specific source type.
 	*/
-	inline Status create(const Device& device, StreamSource sourceType);
+	inline Status create(const Device& device, SensorType sensorType);
 
 	/**
 	Destroy this stream.
@@ -405,9 +399,9 @@ public:
 		}
 	}
 
-	const StreamSourceInfo& getStreamSourceInfo() const
+	const SensorInfo& getSensorInfo() const
 	{
-		return m_streamSourceInfo;
+		return m_sensorInfo;
 	}
 
 	/**
@@ -417,10 +411,10 @@ public:
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
-		return oniStreamStart(m_stream);
+		return (Status)oniStreamStart(m_stream);
 	}
 
 	/**
@@ -441,15 +435,15 @@ public:
 	This method will block until a frame is available.
 	To avoid blocking, check out OpenNI::WaitForStreams
 	*/
-	Status readFrame(FrameRef* pFrame)
+	Status readFrame(VideoFrameRef* pFrame)
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
 		OniFrame* pOniFrame;
-		Status rc = oniStreamReadFrame(m_stream, &pOniFrame);
+		Status rc = (Status)oniStreamReadFrame(m_stream, &pOniFrame);
 
 		pFrame->setReference(pOniFrame);
 		return rc;
@@ -462,12 +456,12 @@ public:
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
 		OniCallbackHandle handle;
-		Status rc = oniStreamRegisterNewFrameCallback(m_stream, pListener->getNewFrameCallback(), pListener, &handle);
-		if (rc == ONI_STATUS_OK)
+		Status rc = (Status)oniStreamRegisterNewFrameCallback(m_stream, pListener->getNewFrameCallback(), pListener, &handle);
+		if (rc == STATUS_OK)
 		{
 			pListener->setCallbackHandle(handle);
 		}
@@ -505,10 +499,10 @@ public:
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
-		return oniStreamGetProperty(m_stream, propertyId, data, dataSize);
+		return (Status)oniStreamGetProperty(m_stream, propertyId, data, dataSize);
 	}
 	/**
 	Set a new value to a general property of the stream
@@ -517,10 +511,10 @@ public:
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
-		return oniStreamSetProperty(m_stream, propertyId, data, dataSize);
+		return (Status)oniStreamSetProperty(m_stream, propertyId, data, dataSize);
 	}
 
 	///////////////////////// Properties Convenience Layer
@@ -530,7 +524,7 @@ public:
 	VideoMode getVideoMode() const
 	{
 		VideoMode videoMode;
-		getProperty<OniVideoMode>(ONI_STREAM_PROPERTY_VIDEO_MODE, static_cast<OniVideoMode*>(&videoMode));
+		getProperty<OniVideoMode>(STREAM_PROPERTY_VIDEO_MODE, static_cast<OniVideoMode*>(&videoMode));
 		return videoMode;
 	}
 
@@ -539,7 +533,7 @@ public:
 	*/
 	Status setVideoMode(const VideoMode& videoMode)
 	{
-		return setProperty<OniVideoMode>(ONI_STREAM_PROPERTY_VIDEO_MODE, static_cast<const OniVideoMode&>(videoMode));
+		return setProperty<OniVideoMode>(STREAM_PROPERTY_VIDEO_MODE, static_cast<const OniVideoMode&>(videoMode));
 	}
 	/////
 	/**
@@ -548,8 +542,8 @@ public:
 	int getMaxPixelValue() const
 	{
 		int maxValue;
-		Status rc = getProperty<int>(ONI_STREAM_PROPERTY_MAX_VALUE, &maxValue);
-		if (rc != ONI_STATUS_OK)
+		Status rc = getProperty<int>(STREAM_PROPERTY_MAX_VALUE, &maxValue);
+		if (rc != STATUS_OK)
 		{
 			return 0;
 		}
@@ -562,8 +556,8 @@ public:
 	int getMinPixelValue() const
 	{
 		int minValue;
-		Status rc = getProperty<int>(ONI_STREAM_PROPERTY_MIN_VALUE, &minValue);
-		if (rc != ONI_STATUS_OK)
+		Status rc = getProperty<int>(STREAM_PROPERTY_MIN_VALUE, &minValue);
+		if (rc != STATUS_OK)
 		{
 			return 0;
 		}
@@ -572,49 +566,30 @@ public:
 	
 	/////
 	/**
-	Check if this stream supports getting the number of frames (i.e. a PlayerStream)
-	*/
-	Bool isNumberOfFramesSupported() const
-	{
-		return isPropertySupported(ONI_STREAM_PROPERTY_NUMBER_OF_FRAMES);
-	}
-
-	/**
-	Get the number of frames in the stream
-	*/
-	int getNumberOfFrames() const
-	{
-		int numOfFrames = -1;
-		getProperty<int>(ONI_STREAM_PROPERTY_NUMBER_OF_FRAMES, &numOfFrames);
-		return numOfFrames;
-	}
-
-	/////
-	/**
 	Check if this stream supported cropping
 	*/
-	Bool isCroppingSupported() const
+	bool isCroppingSupported() const
 	{
-		return isPropertySupported(ONI_STREAM_PROPERTY_CROPPING);
+		return isPropertySupported(STREAM_PROPERTY_CROPPING);
 	}
 
 	/**
 	Get the current cropping configuration
 	*/
-	Bool getCropping(int* pOriginX, int* pOriginY, int* pWidth, int* pHeight) const
+	bool getCropping(int* pOriginX, int* pOriginY, int* pWidth, int* pHeight) const
 	{
 		OniCropping cropping;
-		Bool enabled = FALSE;
+		bool enabled = false;
 
-		Status rc = getProperty<OniCropping>(ONI_STREAM_PROPERTY_CROPPING, &cropping);
+		Status rc = getProperty<OniCropping>(STREAM_PROPERTY_CROPPING, &cropping);
 
-		if (rc == ONI_STATUS_OK)
+		if (rc == STATUS_OK)
 		{
 			*pOriginX = cropping.originX;
 			*pOriginY = cropping.originY;
 			*pWidth = cropping.width;
 			*pHeight = cropping.height;
-			enabled = cropping.enabled;
+			enabled = (cropping.enabled == TRUE);
 		}
 
 		return enabled;
@@ -630,7 +605,7 @@ public:
 		cropping.originY = originY;
 		cropping.width = width;
 		cropping.height = height;
-		return setProperty<OniCropping>(ONI_STREAM_PROPERTY_CROPPING, cropping);
+		return setProperty<OniCropping>(STREAM_PROPERTY_CROPPING, cropping);
 	}
 
 	/**
@@ -640,50 +615,45 @@ public:
 	{
 		OniCropping cropping;
 		cropping.enabled = false;
-		return setProperty<OniCropping>(ONI_STREAM_PROPERTY_CROPPING, cropping);
+		return setProperty<OniCropping>(STREAM_PROPERTY_CROPPING, cropping);
 	}
 	/////
 	/**
 	Check if this stream is currently mirrored
 	*/
-	Bool isMirroringEnabled() const
+	bool getMirroringEnabled() const
 	{
-		Bool enabled;
-		Status rc = getProperty<OniBool>(ONI_STREAM_PROPERTY_MIRRORING, &enabled);
-		if (rc != ONI_STATUS_OK)
+		OniBool enabled;
+		Status rc = getProperty<OniBool>(STREAM_PROPERTY_MIRRORING, &enabled);
+		if (rc != STATUS_OK)
 		{
-			return FALSE;
+			return false;
 		}
-		return enabled;
+		return enabled == TRUE;
 	}
 
 	/**
 	Change the mirror state of this stream
 	*/
-	Status enableMirroring()
+	Status setMirroringEnabled(bool isEnabled)
 	{
-		return setProperty<OniBool>(ONI_STREAM_PROPERTY_MIRRORING, TRUE);
-	}
-
-	Status disableMirroring()
-	{
-		return setProperty<OniBool>(ONI_STREAM_PROPERTY_MIRRORING, FALSE);
+		return setProperty<OniBool>(STREAM_PROPERTY_MIRRORING, isEnabled ? TRUE : FALSE);
 	}
 
 	/**
 	Gets the field of view of this stream.
 	The output will be in radians.
 	*/
-	float getHoritzontalFieldOfView() const
+	float getHorizontalFieldOfView() const
 	{
 		float horizontal = 0;
-		getProperty<float>(ONI_STREAM_PROPERTY_HORIZONTAL_FOV, &horizontal);
+		getProperty<float>(STREAM_PROPERTY_HORIZONTAL_FOV, &horizontal);
 		return horizontal;
 	}
 	float getVerticalFieldOfView() const
 	{
 		float vertical = 0;
-		getProperty<float>(ONI_STREAM_PROPERTY_VERTICAL_FOV, &vertical);
+		getProperty<float>(STREAM_PROPERTY_VERTICAL_FOV, &vertical);
 		return vertical;
 	}
 
@@ -693,64 +663,64 @@ public:
 		return setProperty(propertyId, &value, sizeof(T));
 	}
 
-	// Stride
-private:
 	template <class T>
 	Status getProperty(int propertyId, T* value) const
 	{
 		int size = sizeof(T);
 		return getProperty(propertyId, value, &size);
 	}
+	// Stride
+private:
 
-	Bool isPropertySupported(int propertyId) const
+	bool isPropertySupported(int propertyId) const
 	{
 		if (!isValid())
 		{
-			return FALSE;
+			return false;
 		}
 
-		return oniStreamIsPropertySupported(m_stream, propertyId);
+		return oniStreamIsPropertySupported(m_stream, propertyId) == TRUE;
 	}
 
 	Status invoke(int commandId, void* data, int dataSize)
 	{
 		if (!isValid())
 		{
-			return ONI_STATUS_ERROR;
+			return STATUS_ERROR;
 		}
 
-		return oniStreamInvoke(m_stream, commandId, data, dataSize);
+		return (Status)oniStreamInvoke(m_stream, commandId, data, dataSize);
 	}
 
-	Bool isCommandSupported(int commandId) const
+	bool isCommandSupported(int commandId) const
 	{
 		if (!isValid())
 		{
-			return FALSE;
+			return false;
 		}
 
-		return oniStreamIsCommandSupported(m_stream, commandId);
+		return (Status)oniStreamIsCommandSupported(m_stream, commandId) == TRUE;
 	}
 
 	friend class Device;
 
 	void _setHandle(OniStreamHandle stream)
 	{
-		m_streamSourceInfo._setInternal(NULL);
+		m_sensorInfo._setInternal(NULL);
 		m_stream = stream;
 
 		if (stream != NULL)
 		{
-			m_streamSourceInfo._setInternal(oniStreamGetSourceInfo(m_stream));
+			m_sensorInfo._setInternal(oniStreamGetSensorInfo(m_stream));
 		}
 	}
 
 private:
-	Stream(const Stream& other);
-	Stream& operator=(const Stream& other);
+	VideoStream(const VideoStream& other);
+	VideoStream& operator=(const VideoStream& other);
 
 	OniStreamHandle m_stream;
-	StreamSourceInfo m_streamSourceInfo;
+	SensorInfo m_sensorInfo;
 };
 
 /**
@@ -766,7 +736,7 @@ public:
 	*/
 	Device() : m_device(NULL)
 	{
-		clearSources();
+		clearSensors();
 	}
 
 	~Device()
@@ -783,14 +753,14 @@ public:
 	Status open(const char* uri)
 	{
 		OniDeviceHandle deviceHandle;
-		Status rc = oniDeviceOpen(uri, &deviceHandle);
-		if (rc != ONI_STATUS_OK)
+		Status rc = (Status)oniDeviceOpen(uri, &deviceHandle);
+		if (rc != STATUS_OK)
 		{
 			return rc;
 		}
 
 		_setHandle(deviceHandle);
-		return ONI_STATUS_OK;
+		return STATUS_OK;
 	}
 
 	/**
@@ -815,61 +785,61 @@ public:
 	/**
 	Check if this device supports a specific stream source
 	*/
-	Bool hasStreamSource(StreamSource streamSource)
+	bool hasSensor(SensorType sensorType)
 	{
 		int i;
-		for (int i; (i < ONI_MAX_SOURCES) && (m_aStreamSourceInfo[i].m_pInfo != NULL); ++i)
+		for (int i; (i < ONI_MAX_SENSORS) && (m_aSensorInfo[i].m_pInfo != NULL); ++i)
 		{
-			if (m_aStreamSourceInfo[i].getSourceType() == streamSource)
+			if (m_aSensorInfo[i].getSensorType() == sensorType)
 			{
-				return TRUE;
+				return true;
 			}
 		}
 
-		if (i == ONI_MAX_SOURCES)
+		if (i == ONI_MAX_SENSORS)
 		{
-			return FALSE;
+			return false;
 		}
 
-		const OniStreamSourceInfo* pInfo = oniDeviceGetStreamSourceInfo(m_device, streamSource);
+		const OniSensorInfo* pInfo = oniDeviceGetSensorInfo(m_device, (OniSensorType)sensorType);
 
 		if (pInfo == NULL)
 		{
-			return FALSE;
+			return false;
 		}
 
-		m_aStreamSourceInfo[i]._setInternal(pInfo);
+		m_aSensorInfo[i]._setInternal(pInfo);
 
-		return TRUE;
+		return true;
 	}
 	/**
 	Get the possible configurations available for a specific source
 	*/
-	const StreamSourceInfo* getStreamSourceInfo(StreamSource streamSource)
+	const SensorInfo* getSensorInfo(SensorType sensorType)
 	{
 		int i;
-		for (i = 0; (i < ONI_MAX_SOURCES) && (m_aStreamSourceInfo[i].m_pInfo != NULL); ++i)
+		for (i = 0; (i < ONI_MAX_SENSORS) && (m_aSensorInfo[i].m_pInfo != NULL); ++i)
 		{
-			if (m_aStreamSourceInfo[i].getSourceType() == streamSource)
+			if (m_aSensorInfo[i].getSensorType() == sensorType)
 			{
-				return &m_aStreamSourceInfo[i];
+				return &m_aSensorInfo[i];
 			}
 		}
 
 		// not found. check to see we have additional space
-		if (i == ONI_MAX_SOURCES)
+		if (i == ONI_MAX_SENSORS)
 		{
 			return NULL;
 		}
 
-		const OniStreamSourceInfo* pInfo = oniDeviceGetStreamSourceInfo(m_device, streamSource);
+		const OniSensorInfo* pInfo = oniDeviceGetSensorInfo(m_device, (OniSensorType)sensorType);
 		if (pInfo == NULL)
 		{
 			return NULL;
 		}
 
-		m_aStreamSourceInfo[i]._setInternal(pInfo);
-		return &m_aStreamSourceInfo[i];
+		m_aSensorInfo[i]._setInternal(pInfo);
+		return &m_aSensorInfo[i];
 	}
 
 	/**
@@ -887,7 +857,7 @@ public:
 	*/
 	Status getProperty(int propertyId, void* data, int* dataSize) const
 	{
-		return oniDeviceGetProperty(m_device, propertyId, data, dataSize);
+		return (Status)oniDeviceGetProperty(m_device, propertyId, data, dataSize);
 	}
 
 	/**
@@ -895,15 +865,15 @@ public:
 	*/
 	Status setProperty(int propertyId, const void* data, int dataSize)
 	{
-		return oniDeviceSetProperty(m_device, propertyId, data, dataSize);
+		return (Status)oniDeviceSetProperty(m_device, propertyId, data, dataSize);
 	}
 	///////////////////////// Properties Convenience Layer
 	/**
 	Check if this device can register the image between its different streams
 	*/
-	Bool isImageRegistrationSupported() const
+	bool isImageRegistrationModeSupported(ImageRegistrationMode mode) const
 	{
-		return isPropertySupported(ONI_DEVICE_PROPERTY_IMAGE_REGISTRATION);
+		return (oniDeviceIsImageRegistrationModeSupported(m_device, (OniImageRegistrationMode)mode) == TRUE);
 	}
 
 	/**
@@ -912,10 +882,10 @@ public:
 	ImageRegistrationMode getImageRegistrationMode() const
 	{
 		ImageRegistrationMode mode;
-		Status rc = getProperty<OniImageRegistrationMode>(ONI_DEVICE_PROPERTY_IMAGE_REGISTRATION, &mode);
-		if (rc != ONI_STATUS_OK)
+		Status rc = getProperty<ImageRegistrationMode>(DEVICE_PROPERTY_IMAGE_REGISTRATION, &mode);
+		if (rc != STATUS_OK)
 		{
-			return ONI_IMAGE_REGISTRATION_OFF;
+			return IMAGE_REGISTRATION_OFF;
 		}
 		return mode;
 	}
@@ -925,7 +895,7 @@ public:
 	*/
 	Status setImageRegistrationMode(ImageRegistrationMode mode)
 	{
-		return setProperty<OniImageRegistrationMode>(ONI_DEVICE_PROPERTY_IMAGE_REGISTRATION, mode);
+		return setProperty<ImageRegistrationMode>(DEVICE_PROPERTY_IMAGE_REGISTRATION, mode);
 	}
 
 	// FirmwareVersion
@@ -933,112 +903,42 @@ public:
 	// HardwareVersion
 	// SerialNumber
 	// ErrorState
-	/**
-	Check if this device supports playback speed
-	*/
-	Bool isPlaybackSpeedSupported() const
-	{
-		return isPropertySupported(ONI_DEVICE_PROPERTY_PLAYBACK_SPEED);
-	}
-	/**
-	Get the current playback speed
-	*/
-	float getPlaybackSpeed() const
-	{
-		float speed;
-		Status rc = getProperty<float>(ONI_DEVICE_PROPERTY_PLAYBACK_SPEED, &speed);
-		if (rc != ONI_STATUS_OK)
-		{
-			return 1.0f;
-		}
-		return speed;
-	}
-	/**
-	Change the playback speed
-	*/
-	Status setPlaybackSpeed(float speed)
-	{
-		return setProperty<float>(ONI_DEVICE_PROPERTY_PLAYBACK_SPEED, speed);
-	}
-
-
-	/**
-	Check if this device supports loop mode
-	*/
-	Bool isPlaybackLoopModeSupported() const
-	{
-		return isPropertySupported(ONI_DEVICE_PROPERTY_PLAYBACK_LOOP_MODE);
-	}
-	/**
-	Get the current loop mode
-	*/
-	Bool getPlaybackLoopMode() const
-	{
-		Bool loop;
-		Status rc = getProperty<Bool>(ONI_DEVICE_PROPERTY_PLAYBACK_LOOP_MODE, &loop);
-		if (rc != ONI_STATUS_OK)
-		{
-			return FALSE;
-		}
-
-		return loop;
-	}
-	/**
-	Change the loop mode
-	*/
-	Status setPlaybackLoopMode(Bool loop)
-	{
-		return setProperty<Bool>(ONI_DEVICE_PROPERTY_PLAYBACK_LOOP_MODE, loop);
-	}
 
 	/**
 	Does the device object represent an open device.SetHandle
 	*/
-	Bool isValid() const
+	bool isValid() const
 	{
 		return m_device != NULL;
 	}
 
-	/**
-	Seek the stream to the frame ID.
-	*/
-	Status seek(const Stream& stream, int frameIndex)
+	bool isFile() const
 	{
-		OniSeek seek;
-		seek.frameIndex = frameIndex;
-		seek.stream = stream._getHandle();
-		return invoke(ONI_DEVICE_COMMAND_SEEK, &seek, sizeof(seek));
-	}
-	Bool isSeekSupported() const
-	{
-		return isCommandSupported(ONI_DEVICE_COMMAND_SEEK);
+		return isPropertySupported(DEVICE_PROPERTY_PLAYBACK_SPEED) &&
+			isPropertySupported(DEVICE_PROPERTY_PLAYBACK_REPEAT_ENABLED) &&
+			isCommandSupported(DEVICE_COMMAND_SEEK);
 	}
 
-	Status enableDepthColorSync()
+	Status setDepthColorSyncEnabled(bool isEnabled)
 	{
-		return oniDeviceEnableDepthColorSync(m_device);
-	}
-	void disableDepthColorSync()
-	{
-		oniDeviceDisableDepthColorSync(m_device);
+		Status rc = STATUS_OK;
+
+		if (isEnabled)
+		{
+			rc = (Status)oniDeviceEnableDepthColorSync(m_device);
+		}
+		else
+		{
+			oniDeviceDisableDepthColorSync(m_device);
+		}
+		
+		return rc;
 	}
 
 	template <class T>
 	Status setProperty(int propertyId, const T& value)
 	{
 		return setProperty(propertyId, &value, sizeof(T));
-	}
-
-private:
-	Device(const Device&);
-	Device& operator=(const Device&);
-
-	void clearSources()
-	{
-		for (int i = 0; i < ONI_MAX_SOURCES; ++i)
-		{
-			m_aStreamSourceInfo[i]._setInternal(NULL);
-		}
 	}
 	template <class T>
 	Status getProperty(int propertyId, T* value) const
@@ -1047,19 +947,36 @@ private:
 		return getProperty(propertyId, value, &size);
 	}
 
-	Bool isPropertySupported(int propertyId) const
+	template <class T>
+	Status invoke(int propertyId, const T& value)
 	{
-		return oniDeviceIsPropertySupported(m_device, propertyId);
+		return invoke(propertyId, &value, sizeof(T));
+	}
+private:
+	Device(const Device&);
+	Device& operator=(const Device&);
+
+	void clearSensors()
+	{
+		for (int i = 0; i < ONI_MAX_SENSORS; ++i)
+		{
+			m_aSensorInfo[i]._setInternal(NULL);
+		}
 	}
 
-	Status invoke(int commandId, void* data, int dataSize)
+	bool isPropertySupported(int propertyId) const
 	{
-		return oniDeviceInvoke(m_device, commandId, data, dataSize);
+		return oniDeviceIsPropertySupported(m_device, propertyId) == TRUE;
 	}
 
-	Bool isCommandSupported(int commandId) const
+	Status invoke(int commandId, const void* data, int dataSize)
 	{
-		return oniDeviceIsCommandSupported(m_device, commandId);
+		return (Status)oniDeviceInvoke(m_device, commandId, data, dataSize);
+	}
+
+	bool isCommandSupported(int commandId) const
+	{
+		return oniDeviceIsCommandSupported(m_device, commandId) == TRUE;
 	}
 
 	Status _setHandle(OniDeviceHandle deviceHandle)
@@ -1068,20 +985,141 @@ private:
 		{
 			m_device = deviceHandle;
 
-			clearSources();
+			clearSensors();
 
 			oniDeviceGetInfo(m_device, &m_deviceInfo);
 			// Read deviceInfo
-			return ONI_STATUS_OK;
+			return STATUS_OK;
 		}
 
-		return ONI_STATUS_OUT_OF_FLOW;
+		return STATUS_OUT_OF_FLOW;
 	}
 
 private:
 	OniDeviceHandle m_device;
 	OniDeviceInfo m_deviceInfo;
-	StreamSourceInfo m_aStreamSourceInfo[ONI_MAX_SOURCES];
+	SensorInfo m_aSensorInfo[ONI_MAX_SENSORS];
+};
+
+class PlaybackControl
+{
+public:
+	PlaybackControl() : m_pDevice(NULL)
+	{}
+	~PlaybackControl()
+	{
+		detach();
+	}
+
+	Status attach(Device* device)
+	{
+		if (!device->isValid() || !device->isFile())
+		{
+			return STATUS_ERROR;
+		}
+
+		detach();
+		m_pDevice = device;
+
+		return STATUS_OK;
+	}
+	void detach()
+	{
+		m_pDevice = NULL;
+	}
+
+	/**
+	Get the current playback speed
+	*/
+	float getSpeed() const
+	{
+		if (m_pDevice == NULL)
+		{
+			return 0.0f;
+		}
+		float speed;
+		Status rc = m_pDevice->getProperty<float>(DEVICE_PROPERTY_PLAYBACK_SPEED, &speed);
+		if (rc != STATUS_OK)
+		{
+			return 1.0f;
+		}
+		return speed;
+	}
+	/**
+	Change the playback speed
+	*/
+	Status setSpeed(float speed)
+	{
+		if (m_pDevice == NULL)
+		{
+			return STATUS_NO_DEVICE;
+		}
+		return m_pDevice->setProperty<float>(DEVICE_PROPERTY_PLAYBACK_SPEED, speed);
+	}
+
+	/**
+	Get the current repeat mode
+	*/
+	bool getRepeatEnabled() const
+	{
+		if (m_pDevice == NULL)
+		{
+			return false;
+		}
+
+		OniBool repeat;
+		Status rc = m_pDevice->getProperty<OniBool>(DEVICE_PROPERTY_PLAYBACK_REPEAT_ENABLED, &repeat);
+		if (rc != STATUS_OK)
+		{
+			return false;
+		}
+
+		return repeat == TRUE;
+	}
+	/**
+	Change the repeat mode
+	*/
+	Status setRepeateEnabled(bool repeat)
+	{
+		if (m_pDevice == NULL)
+		{
+			return STATUS_NO_DEVICE;
+		}
+
+		return m_pDevice->setProperty<OniBool>(DEVICE_PROPERTY_PLAYBACK_REPEAT_ENABLED, repeat ? TRUE : FALSE);
+	}
+
+	/**
+	Seek the stream to the frame ID.
+	*/
+	Status seek(const VideoStream& stream, int frameIndex)
+	{
+		if (m_pDevice == NULL)
+		{
+			return STATUS_NO_DEVICE;
+		}
+		OniSeek seek;
+		seek.frameIndex = frameIndex;
+		seek.stream = stream._getHandle();
+		return m_pDevice->invoke(DEVICE_COMMAND_SEEK, seek);
+	}
+
+	/**
+	Get the number of frames in the stream
+	*/
+	int getNumberOfFrames(const VideoStream& stream) const
+	{
+		int numOfFrames = -1;
+		Status rc = stream.getProperty<int>(STREAM_PROPERTY_NUMBER_OF_FRAMES, &numOfFrames);
+		if (rc != STATUS_OK)
+		{
+			return 0;
+		}
+		return numOfFrames;
+	}
+
+private:
+	Device* m_pDevice;
 };
 
 /**
@@ -1129,10 +1167,10 @@ public:
 			Listener* pCallbacks = (Listener*)pCookie;
 			pCallbacks->onDeviceDisconnected(static_cast<const DeviceInfo*>(pInfo));
 		}
-		static void ONI_CALLBACK_TYPE contextListener_DeviceStateChanged(const OniDeviceInfo* pInfo, DeviceState deviceState, void* pCookie)
+		static void ONI_CALLBACK_TYPE contextListener_DeviceStateChanged(const OniDeviceInfo* pInfo, OniDeviceState deviceState, void* pCookie)
 		{
 			Listener* pListener = (Listener*)pCookie;
-			pListener->onDeviceStateChanged(static_cast<const DeviceInfo*>(pInfo), deviceState);
+			pListener->onDeviceStateChanged(static_cast<const DeviceInfo*>(pInfo), (DeviceState)deviceState);
 		}
 
 		friend class OpenNI;
@@ -1147,7 +1185,7 @@ public:
 	*/
 	static Status initialize()
 	{
-		return oniInitialize(ONI_API_VERSION); // provide version of API, to make sure proper struct sizes are used
+		return (Status)oniInitialize(ONI_API_VERSION); // provide version of API, to make sure proper struct sizes are used
 	}
 
 	/**
@@ -1161,9 +1199,9 @@ public:
 	/**
 	Get the version of OpenNI
 	*/
-	static void getVersion(Version* pVersion)
+	static Version getVersion()
 	{
-		oniGetVersion(pVersion);
+		return oniGetVersion();
 	}
 
 	/**
@@ -1177,12 +1215,12 @@ public:
 	/**
 	Initialize a DeviceInfoList object with all the devices that are available
 	*/
-	static void getDeviceInfoList(Array<DeviceInfo>* deviceInfoList)
+	static void enumerateDevices(Array<DeviceInfo>* deviceInfoList)
 	{
 		OniDeviceInfo* m_pDeviceInfos;
 		int m_deviceInfoCount;
 		oniGetDeviceList(&m_pDeviceInfos, &m_deviceInfoCount);
-		deviceInfoList->copyData((DeviceInfo*)m_pDeviceInfos, m_deviceInfoCount);
+		deviceInfoList->setData((DeviceInfo*)m_pDeviceInfos, m_deviceInfoCount, true);
 		oniReleaseDeviceList(m_pDeviceInfos);
 	}
 
@@ -1191,18 +1229,18 @@ public:
 	A timeout is passed so that blocking will be optional
 	*/
 	static const int ONI_MAX_STREAMS = 50;
-	static Status waitForAnyStream(Stream** pStreams, int streamsCount, int* pReadyStreamIndex, int timeout = ONI_TIMEOUT_FOREVER)
+	static Status waitForAnyStream(VideoStream** pStreams, int streamCount, int* pReadyStreamIndex, int timeout = TIMEOUT_FOREVER)
 	{
 		OniStreamHandle streams[ONI_MAX_STREAMS];
 
-		if (streamsCount > ONI_MAX_STREAMS)
+		if (streamCount > ONI_MAX_STREAMS)
 		{
-			printf("Too many streams for wait: %d > %d\n", streamsCount, ONI_MAX_STREAMS);
-			return ONI_STATUS_BAD_PARAMETER;
+			printf("Too many streams for wait: %d > %d\n", streamCount, ONI_MAX_STREAMS);
+			return STATUS_BAD_PARAMETER;
 		}
 
 		*pReadyStreamIndex = -1;
-		for (int i = 0; i < streamsCount; ++i)
+		for (int i = 0; i < streamCount; ++i)
 		{
 			if (pStreams[i] != NULL)
 			{
@@ -1213,7 +1251,7 @@ public:
 				streams[i] = NULL;
 			}
 		}
-		Status rc = oniWaitForAnyStream(streams, streamsCount, pReadyStreamIndex, timeout);
+		Status rc = (Status)oniWaitForAnyStream(streams, streamCount, pReadyStreamIndex, timeout);
 
 		return rc;
 	}
@@ -1223,7 +1261,7 @@ public:
 	*/
 	static Status addListener(Listener* pListener)
 	{
-		return oniRegisterDeviceCallbacks(&pListener->m_deviceCallbacks, pListener, &pListener->m_callbackHandle);
+		return (Status)oniRegisterDeviceCallbacks(&pListener->m_deviceCallbacks, pListener, &pListener->m_callbackHandle);
 	}
 
 	/**
@@ -1241,71 +1279,38 @@ private:
 	}
 };
 
-class DepthWorldPointConverter
+class CoordinateConverter
 {
 public:
-	DepthWorldPointConverter() : m_xzFactor(0), m_yzFactor(0), m_coeffX(0), m_coeffY(0)
-	{}
-
-	void initialize(const Stream& depthStream)
-	{
-		float horizontal = depthStream.getHoritzontalFieldOfView();
-		float vertical = depthStream.getVerticalFieldOfView();
-		VideoMode vm = depthStream.getVideoMode();
-
-		initialize(horizontal, vertical, vm.getXResolution(), vm.getYResolution());
-	}
-
-	void initialize(float horizontalFov, float verticalFov, int xResolution, int yResolution)
-	{
-		m_xzFactor = tan(horizontalFov/2)*2;
-		m_yzFactor = tan(verticalFov/2)*2;
-		m_resolutionX = xResolution;
-		m_resolutionY = yResolution;
-		m_halfResX = xResolution / 2;
-		m_halfResY = yResolution / 2;
-
-		m_coeffX = m_resolutionX / m_xzFactor;
-		m_coeffY = m_resolutionY / m_yzFactor;
-	}
-
-	void convertWorldToDepth(float worldX, float worldY, float worldZ, int* x, int* y, int* z)
+	static Status convertWorldToDepth(const VideoStream& depthStream, float worldX, float worldY, float worldZ, int* pDepthX, int* pDepthY, DepthPixel* pDepthZ)
 	{
 		float depthX, depthY, depthZ;
-		convertWorldToDepth(worldX, worldY, worldZ, &depthX, &depthY, &depthZ);
-		*x = (int)depthX;
-		*y = (int)depthY;
-		*z = (int)depthZ;
+		Status rc = (Status)oniCoordinateConverterWorldToDepth(depthStream._getHandle(), worldX, worldY, worldZ, &depthX, &depthY, &depthZ);
+		*pDepthX = (int)depthX;
+		*pDepthY = (int)depthY;
+		*pDepthZ = (DepthPixel)depthZ;
+		return rc;
 	}
-	void convertWorldToDepth(float worldX, float worldY, float worldZ, float* x, float* y, float* z)
-	{
-		*x = m_coeffX * worldX / worldZ + m_halfResX;
-		*y = m_halfResY - m_coeffY * worldY / worldZ;
-		*z = worldZ;
-	}
-	void convertDepthToWorld(int x, int y, int z, float* pWorldX, float* pWorldY, float* pWorldZ)
-	{
-		convertDepthToWorld(float(x), float(y), float(z), pWorldX, pWorldY, pWorldZ);
-	}
-	void convertDepthToWorld(float x, float y, float z, float* pWorldX, float* pWorldY, float* pWorldZ)
-	{
-		float normalizedX = x / m_resolutionX - .5f;
-		float normalizedY = .5f - y / m_resolutionY;
 
-		*pWorldX = normalizedX * z * m_xzFactor;
-		*pWorldY = normalizedY * z * m_yzFactor;
-		*pWorldZ = z;
+	static Status convertWorldToDepth(const VideoStream& depthStream, float worldX, float worldY, float worldZ, float* pDepthX, float* pDepthY, float* pDepthZ)
+	{
+		return (Status)oniCoordinateConverterWorldToDepth(depthStream._getHandle(), worldX, worldY, worldZ, pDepthX, pDepthY, pDepthZ);
 	}
-private:
-	float m_xzFactor;
-	float m_yzFactor;
-	float m_coeffX;
-	float m_coeffY;
 
-	int m_resolutionX;
-	int m_resolutionY;
-	int m_halfResX;
-	int m_halfResY;
+	static Status convertDepthToWorld(const VideoStream& depthStream, int depthX, int depthY, DepthPixel depthZ, float* pWorldX, float* pWorldY, float* pWorldZ)
+	{
+		return (Status)oniCoordinateConverterDepthToWorld(depthStream._getHandle(), float(depthX), float(depthY), float(depthZ), pWorldX, pWorldY, pWorldZ);
+	}
+
+	static Status convertDepthToWorld(const VideoStream& depthStream, float depthX, float depthY, float depthZ, float* pWorldX, float* pWorldY, float* pWorldZ)
+	{
+		return (Status)oniCoordinateConverterDepthToWorld(depthStream._getHandle(), depthX, depthY, depthZ, pWorldX, pWorldY, pWorldZ);
+	}
+
+	static Status convertDepthToColor(const VideoStream& depthStream, const VideoStream& colorStream, int depthX, int depthY, DepthPixel depthZ, int* pColorX, int* pColorY)
+	{
+		return (Status)oniCoordinateConverterDepthToColor(depthStream._getHandle(), colorStream._getHandle(), depthX, depthY, depthZ, pColorX, pColorY);
+	}
 };
 
 /**
@@ -1317,7 +1322,7 @@ class Recorder
 {
 // A handy macro, validating that the Recorder has been initialized before
 // use. This macro reduces code duplicate significantly.
-#define SHOULD_BE_VALID if (!isValid()) { return ONI_STATUS_ERROR; } else {}
+#define SHOULD_BE_VALID if (!isValid()) { return STATUS_ERROR; } else {}
 
 public:
     /**
@@ -1345,17 +1350,17 @@ public:
     {
         if (!isValid())
         {
-            return oniCreateRecorder(fileName, &m_recorder);
+            return (Status)oniCreateRecorder(fileName, &m_recorder);
         }
-        return ONI_STATUS_ERROR;
+        return STATUS_ERROR;
     }
 
     /**
      * Verifies if the recorder is valid, i.e. if one can record with this recorder.
 	 *
-     * @retval	TRUE	if the recorder is valid.
+     * @retval	true	if the recorder is valid.
      */
-    Bool isValid() const
+    bool isValid() const
     {
         return NULL != getHandle();
     }    
@@ -1365,16 +1370,16 @@ public:
      * should explicitly start it using Start() method. As soon as the recording
      * process has been started, no more streams can be attached to the recorder.
      */
-    Status attach(Stream& aStream, Bool allowLossyCompression = FALSE)
+    Status attach(VideoStream& stream, bool allowLossyCompression = false)
     {
         SHOULD_BE_VALID
-        if (!aStream.isValid())
+        if (!stream.isValid())
         {
-            return ONI_STATUS_ERROR;
+            return STATUS_ERROR;
         }
-        return oniRecorderAttachStream(
+        return (Status)oniRecorderAttachStream(
                 m_recorder, 
-                aStream._getHandle(),
+                stream._getHandle(),
                 allowLossyCompression);
     }
 
@@ -1384,7 +1389,7 @@ public:
     Status start()
     {
         SHOULD_BE_VALID
-        return oniRecorderStart(m_recorder);
+        return (Status)oniRecorderStart(m_recorder);
     }
 
     /**
@@ -1426,17 +1431,17 @@ private:
 };
 
 // Implemetation
-Status Stream::create(const Device& device, StreamSource sourceType)
+Status VideoStream::create(const Device& device, SensorType sensorType)
 {
 	OniStreamHandle streamHandle;
-	Status rc = oniDeviceCreateStream(device._getHandle(), sourceType, &streamHandle);
-	if (rc != ONI_STATUS_OK)
+	Status rc = (Status)oniDeviceCreateStream(device._getHandle(), (OniSensorType)sensorType, &streamHandle);
+	if (rc != STATUS_OK)
 	{
 		return rc;
 	}
 
 	_setHandle(streamHandle);
-	return ONI_STATUS_OK;
+	return STATUS_OK;
 }
 
 

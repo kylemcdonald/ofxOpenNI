@@ -23,7 +23,7 @@
 
 #include "OniPlatform.h"
 #include "OniCTypes.h"
-#include "OniProperties.h"
+#include "OniCProperties.h"
 #include "OniDriverTypes.h"
 #include <stdarg.h>
 
@@ -63,6 +63,8 @@ public:
 
 	virtual void notifyAllProperties() { return; }
 
+	virtual OniStatus convertDepthToColorCoordinates(StreamBase* /*colorStream*/, int /*depthX*/, int /*depthY*/, OniDepthPixel /*depthZ*/, int* /*pColorX*/, int* /*pColorY*/) { return ONI_STATUS_NOT_SUPPORTED; }
+
 protected:
 	void raiseNewFrame(OniDriverFrame* pFrame) { (*m_newFrameCallback)(this, pFrame, m_newFrameCallbackCookie); }
 	void raisePropertyChanged(int propertyId, const void* data, int dataSize) { (*m_propertyChangedCallback)(this, propertyId, data, dataSize, m_propertyChangedCookie); }
@@ -82,9 +84,9 @@ public:
 
 	virtual void close() = 0;
 
-	virtual OniStatus getStreamSourceInfoList(OniStreamSourceInfo** pStreamSourceInfos, int* numStreamSources) = 0;
+	virtual OniStatus getSensorInfoList(OniSensorInfo** pSensorInfos, int* numSensors) = 0;
 
-	virtual StreamBase* createStream(OniStreamSource) = 0;
+	virtual StreamBase* createStream(OniSensorType) = 0;
 
 	virtual OniStatus setProperty(int /*propertyId*/, const void* /*data*/, int /*dataSize*/) {return ONI_STATUS_NOT_IMPLEMENTED;}
 	virtual OniStatus getProperty(int /*propertyId*/, void* /*data*/, int* /*pDataSize*/) {return ONI_STATUS_NOT_IMPLEMENTED;}
@@ -95,6 +97,8 @@ public:
 
 	virtual void setPropertyChangedCallback(PropertyChangedCallback handler, void* pCookie) { m_propertyChangedCallback = handler; m_propertyChangedCookie = pCookie; }
 	virtual void notifyAllProperties() { return; }
+
+	virtual OniBool isImageRegistrationModeSupported(OniImageRegistrationMode mode) { return (mode == ONI_IMAGE_REGISTRATION_OFF); }
 
 protected:
 	void raisePropertyChanged(int propertyId, const void* data, int dataSize) { (*m_propertyChangedCallback)(this, propertyId, data, dataSize, m_propertyChangedCookie); }
@@ -212,16 +216,16 @@ ONI_C_API_EXPORT void oniDriverDeviceClose(oni::driver::DeviceBase* pDevice)				
 	pDevice->close();																										\
 }																															\
 																															\
-ONI_C_API_EXPORT OniStatus oniDriverDeviceGetStreamSourceInfoList(oni::driver::DeviceBase* pDevice, OniStreamSourceInfo** pStreamSourceInfos,		\
-															int* numStreamSources)												\
+ONI_C_API_EXPORT OniStatus oniDriverDeviceGetSensorInfoList(oni::driver::DeviceBase* pDevice, OniSensorInfo** pSensorInfos,	\
+															int* numSensors)												\
 {																															\
-	return pDevice->getStreamSourceInfoList(pStreamSourceInfos, numStreamSources);																\
+	return pDevice->getSensorInfoList(pSensorInfos, numSensors);																\
 }																															\
 																															\
 ONI_C_API_EXPORT oni::driver::StreamBase* oniDriverDeviceCreateStream(oni::driver::DeviceBase* pDevice,						\
-																		OniStreamSource streamSource)							\
+																		OniSensorType sensorType)							\
 {																															\
-	return pDevice->createStream(streamSource);																				\
+	return pDevice->createStream(sensorType);																				\
 }																															\
 																															\
 ONI_C_API_EXPORT OniStatus oniDriverDeviceSetProperty(oni::driver::DeviceBase* pDevice, int propertyId,						\
@@ -259,6 +263,11 @@ ONI_C_API_EXPORT OniBool oniDriverDeviceIsCommandSupported(oni::driver::DeviceBa
 ONI_C_API_EXPORT OniStatus oniDriverDeviceTryManualTrigger(oni::driver::DeviceBase* pDevice)								\
 {																															\
 	return pDevice->tryManualTrigger();																						\
+}																															\
+ONI_C_API_EXPORT OniBool oniDriverDeviceIsImageRegistrationModeSupported(oni::driver::DeviceBase* pDevice,					\
+	OniImageRegistrationMode mode)																							\
+{																															\
+	return pDevice->isImageRegistrationModeSupported(mode);																	\
 }																															\
 																															\
 /* As Stream */																												\
@@ -315,7 +324,7 @@ ONI_C_API_EXPORT void oniDriverStreamSetNewFrameCallback(oni::driver::StreamBase
 	pStream->setNewFrameCallback(handler, pCookie);																			\
 }																															\
 																															\
-ONI_C_API_EXPORT void oniDriverStreamAddRefToFrame(oni::driver::StreamBase* pStream,	OniDriverFrame* pFrame)				\
+ONI_C_API_EXPORT void oniDriverStreamAddRefToFrame(oni::driver::StreamBase* pStream, OniDriverFrame* pFrame)				\
 {																															\
 	pStream->addRefToFrame(pFrame);																							\
 }																															\
@@ -323,6 +332,12 @@ ONI_C_API_EXPORT void oniDriverStreamAddRefToFrame(oni::driver::StreamBase* pStr
 ONI_C_API_EXPORT void oniDriverStreamReleaseFrame(oni::driver::StreamBase* pStream,	OniDriverFrame* pFrame)					\
 {																															\
 	pStream->releaseFrame(pFrame);																							\
+}																															\
+																															\
+ONI_C_API_EXPORT OniStatus oniDriverStreamConvertDepthToColorCoordinates(oni::driver::StreamBase* pDepthStream,				\
+	oni::driver::StreamBase* pColorStream, int depthX, int depthY, OniDepthPixel depthZ, int* pColorX, int* pColorY)		\
+{																															\
+	return pDepthStream->convertDepthToColorCoordinates(pColorStream, depthX, depthY, depthZ, pColorX, pColorY);			\
 }																															\
 																															\
 ONI_C_API_EXPORT void* oniDriverEnableFrameSync(oni::driver::StreamBase** pStreams, int streamCount)						\

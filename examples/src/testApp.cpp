@@ -148,9 +148,9 @@ int testApp::setupOpenNi()
 	}
 
 
-	if (device.getStreamSourceInfo(ONI_STREAM_SOURCE_DEPTH) != NULL)
+	if (device.getSensorInfo(openni::SENSOR_DEPTH) != NULL)
 	{
-		rc = depthStream.create(device, ONI_STREAM_SOURCE_DEPTH);
+		rc = depthStream.create(device, SENSOR_DEPTH);
 		if (rc != ONI_STATUS_OK)
 		{
 			printf("Couldn't create depth stream\n%s\n", OpenNI::getExtendedError());
@@ -161,8 +161,8 @@ int testApp::setupOpenNi()
 //	stream.readFrame(&frame);
 
 
-	int w = depthStream.getVideoMode().getXResolution();
-	int h = depthStream.getVideoMode().getYResolution();
+	int w = depthStream.getVideoMode().getResolutionX();
+	int h = depthStream.getVideoMode().getResolutionY();
 	
 	depthTexture.allocate(w, h, GL_RGB);
 
@@ -180,7 +180,7 @@ int testApp::setupOpenNi()
 
 }
 
-void testApp::onNewFrame( Stream& stream )
+void testApp::onNewFrame( VideoStream& stream )
 {
 	stream.readFrame(&frame);
 	const unsigned short* data = (const unsigned short*)frame.getData();
@@ -279,8 +279,8 @@ int testApp::start()
 	}
 
 
-	handTracker.startGestureDetection(NITE_GESTURE_HAND_RAISE);
-	handTracker.startGestureDetection(NITE_GESTURE_WAVE);
+	handTracker.startGestureDetection(nite::GESTURE_HAND_RAISE);
+	handTracker.startGestureDetection(nite::GESTURE_WAVE);
 	printf("\nWave your hand to start tracking it...\n");
 
 	return 0;
