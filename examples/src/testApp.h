@@ -90,7 +90,7 @@ private:
 	ofTexture texScreen;
 	int counter;
 
-	nite::HandTracker handTracker;
+	nite::UserTracker userTracker;
 
 	Scene scene;
 
@@ -106,7 +106,7 @@ private:
 	bool bdrawGrid; 
 	bool bdrawPadding; 
 
-	nite::HandTrackerFrameRef handTrackerFrame[2];
+	nite::UserTrackerFrameRef userTrackerFrame;
 
 
 };
