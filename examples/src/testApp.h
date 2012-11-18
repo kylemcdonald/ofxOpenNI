@@ -106,6 +106,7 @@ private:
 	bool bdrawGrid; 
 	bool bdrawPadding; 
 
+	ofVec2f headScreenPos;
 	nite::UserTrackerFrameRef userTrackerFrame;
 
 

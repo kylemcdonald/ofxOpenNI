@@ -67,6 +67,7 @@ void testApp::draw(){
 	ofSetHexColor(0xffffff);
 	depthTexture.draw(0,0, depthTexture.getWidth(), depthTexture.getHeight());
 
+	ofCircle(ofPoint(headScreenPos), 10);
 
 	ofCircle(mouseX, mouseY,20);
 	
@@ -206,7 +207,11 @@ void testApp::onNewFrame( VideoStream& stream )
 		{
 			const nite::SkeletonJoint& head = user.getSkeleton().getJoint(nite::JOINT_HEAD);
 			if (head.getPositionConfidence() > .5)
+			{
+				userTracker.convertJointCoordinatesToDepth(head.getPosition().x,head.getPosition().y,head.getPosition().z,&headScreenPos.x, &headScreenPos.y);
 				printf("%d. (%5.2f, %5.2f, %5.2f)\n", user.getId(), head.getPosition().x, head.getPosition().y, head.getPosition().z);
+			}
+
 		}
 	}
 		//notify face?
@@ -227,7 +232,7 @@ void testApp::exit(){
 	depthStream.destroy();
 	device.close();
 
-	abort(); //TODO remove
+	abort(); //avoid crash in tite tracker. TODO remove
 	nite::NiTE::shutdown();
 	OpenNI::shutdown();
 	
