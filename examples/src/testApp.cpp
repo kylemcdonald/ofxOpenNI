@@ -113,6 +113,16 @@ void testApp::draw()
 	cv::Mat dctm32f;
 	dct(m32f, dctm32f /* cv::DCT_ROWS */);
 
+	cv::Mat lpdctm32f;
+	lpdctm32f = dctm32f.rowRange(0, 50).colRange(0,50).clone();
+	
+	cv::Mat idctlpdctm32f;
+	cv::dct(lpdctm32f, idctlpdctm32f, cv::DCT_INVERSE);
+	cvDraw(idctlpdctm32f);
+
+
+	
+
 //	cv::Mat a[9];	for (int i = 0)
 
 	//cv::Mat a(depthPixels->getHeight(), depthPixels->getWidth(),  CV_32FC1);//, depthPixels->getPixels());
@@ -129,19 +139,26 @@ void testApp::draw()
 	
 //	a.rowRange(30, 34).colRange(40, 70).setTo(100);
 	
-	int ri[] = {2,3,5,7,11};
-	int cj[] = {101};//{13,17,19,23};
+	int ri[] = {2};
+	int cj[] = {3};//{13,17,19,23};
 
 	for (int i=0; i < sizeof(ri)/sizeof(int); i++)
 		a.row(i).setTo(100);
 	for (int j=0; j < sizeof(cj)/sizeof(int); j++)
 		a.col(j).setTo(100);
 
+	a.setTo(0);
+	a.rowRange(2,3).colRange(1, 2).setTo(100);
+	
+//	a.data[2] = 100;
+	//	.setTo(100);
+
 //	cv::Range rowRange(30, 34), colRange(40, 70);
 //	a(rowRange,colRange);	
 
 	a.rowRange(cv::Range::all()).colRange(cv::Range::all());
 	cvDraw(a);
+
 
 	cv::Mat a2;
 	cv::idct(a,a2);
