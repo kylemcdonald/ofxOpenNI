@@ -122,11 +122,24 @@ void testApp::draw()
 	//  int s(slider * 100);
 	//	a.row(s).setTo(1000);
 
-	cv::Range rng(sliderL * a.rows, sliderH * a.rows - 1);
-	a.rowRange(rng).setTo(1000);
+//	cv::Range rng(sliderL * a.rows, sliderH * a.rows - 1);
+	//	a.rowRange(rng).setTo(1000);
 
-	cv::idct(a,a);
+//	a.locateROI(cv::Size(3, 20), cv::Point(40, 30));
+	
+	a.rowRange(30, 34).colRange(40, 70).setTo(100);
+
+//	cv::Range rowRange(30, 34), colRange(40, 70);
+//	a(rowRange,colRange);	
+
+	a.rowRange(cv::Range::all()).colRange(cv::Range::all());
 	cvDraw(a);
+
+	cv::Mat a2;
+	cv::idct(a,a2);
+	cv::Mat a4;
+	cv::resize(a2, a4, cv::Size(), 4.0, 4.0);
+	cvDraw(a4);
 
 	//CalibrationPattern 	CHESSBOARD;
 
