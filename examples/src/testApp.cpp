@@ -56,8 +56,7 @@ void testApp::draw()
 	}
 	depthTexture.loadData(colorPixels);
 
-	cv::Mat m(depthPixels->getWidth(), depthPixels->getHeight(), CV_16UC1, depthPixels->getPixels());
-	imshow("",m);
+	cv::Mat m(depthPixels->getHeight(), depthPixels->getWidth(),  CV_16UC1, depthPixels->getPixels());
 
 
 
