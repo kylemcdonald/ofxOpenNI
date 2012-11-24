@@ -2,7 +2,6 @@
 #define _TEST_APP
 
 #include "OpenNI.h"
-#include "NiTE.h"
 
 
 #include "ofMain.h"
@@ -16,7 +15,7 @@
 #define MAX_DEVICES 2
 #define MAX_HANDS 4
 
-class testApp : public ofBaseApp, public openni::VideoStream::Listener, public openni::OpenNI::Listener, nite::UserTracker::Listener
+class testApp : public ofBaseApp, public openni::VideoStream::Listener, public openni::OpenNI::Listener
 {
 
 public:
@@ -38,18 +37,10 @@ public:
 
 	virtual void onNewFrame( openni::VideoStream& stream);
 
-	virtual void onNewFrame();
-
-
-
 private:
 
-//	void handEvent(ofxOpenNIHandEvent & event);
 	int setupOpenNi();
-	int setupNite();
 	int start();
-
-
 
 	ofxFaceTrackerThreaded faceTracker;
 
@@ -106,10 +97,7 @@ private:
 	bool bdrawGrid; 
 	bool bdrawPadding; 
 
-	deque<nite::UserTrackerFrameRef> userTrackerFrameDeque;
-	nite::UserTrackerFrameRef userTrackerFrame;
-	nite::UserTracker userTracker;
-
+	
 
 
 };
