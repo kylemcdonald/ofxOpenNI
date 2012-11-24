@@ -60,6 +60,15 @@ void testApp::draw()
 	}
 	depthTexture.loadData(colorPixels);
 
+	cv::Mat m(depthPixels->getWidth(), depthPixels->getHeight(), CV_16UC1, depthPixels->getPixels());
+	imshow("",m);
+
+
+
+	cv::Mat m2(depthPixels->getWidth(), depthPixels->getHeight(), CV_8UC1, depthPixels->getPixels(), 16);
+	imshow("", m2);
+
+
 
 	ofSetHexColor(0xffffff);
 	depthTexture.draw(0,0, depthTexture.getWidth(), depthTexture.getHeight());
