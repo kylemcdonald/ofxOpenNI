@@ -61,6 +61,19 @@ void testApp::draw()
 
 
 
+	static bool a = true;
+
+	bool r = true;
+	
+	vector<ofxUIWidget*> w = gui4->getWidgets();
+	for (int i = 0; i<w.size(); i++)
+	{
+		bool r = int(sinf(ofGetSystemTime() / 500)) % 2 == 0;
+		bool highestFrequency = ofGetSystemTimeMicros() % 2;
+		bool randBool = rand() % 2;
+
+		w[i]->setVisible(r);
+	}
 	cv::Mat m2(depthPixels->getWidth(), depthPixels->getHeight(), CV_8UC1, depthPixels->getPixels(), 16);
 	imshow("", m2);
 
