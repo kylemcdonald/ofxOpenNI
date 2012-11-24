@@ -110,6 +110,26 @@ void testApp::draw()
 	m.convertTo(m32f, CV_32FC1);
 	cvDrawF(dct,m32f);
 
+	cv::Mat dctm32f;
+	dct(m32f, dctm32f /* cv::DCT_ROWS */);
+
+//	cv::Mat a[9];	for (int i = 0)
+
+	//cv::Mat a(depthPixels->getHeight(), depthPixels->getWidth(),  CV_32FC1);//, depthPixels->getPixels());
+	cv::Mat a(depthPixels->getHeight(), depthPixels->getHeight(),  CV_32FC1);//, depthPixels->getPixels());
+	a.setTo(0);
+
+	//  int s(slider * 100);
+	//	a.row(s).setTo(1000);
+
+	cv::Range rng(sliderL * a.rows, sliderH * a.rows - 1);
+	a.rowRange(rng).setTo(1000);
+
+	cv::idct(a,a);
+	cvDraw(a);
+
+	//CalibrationPattern 	CHESSBOARD;
+
 //	cv::Mat mdct;
 //	cv::dct(m, m);
 
@@ -288,21 +308,34 @@ void testApp::setGUI4()
 	float dim = 16; 
 	float xInit = OFX_UI_GLOBAL_WIDGET_SPACING; 
 	float length = 255-xInit; 
-	gui4 = new ofxUIScrollableCanvas(length*3+xInit*3+6, 0, length+xInit, ofGetHeight());     
+	gui4 = new ofxUIScrollableCanvas(0, 300, length+xInit, ofGetHeight());     //TODO: insert depth debug here
 	gui4->addWidgetDown(new ofxUILabel("PANEL 4: SCROLLABLE", OFX_UI_FONT_LARGE)); 	
 
 	gui4->addSpacer(length-xInit, 2);
 
+	/*
 	gui4->addWidgetDown(new ofxUILabel("BILABEL SLIDER", OFX_UI_FONT_MEDIUM)); 				
 	gui4->addWidgetDown(new ofxUIBiLabelSlider(length-xInit, 0, 100, 50, "BILABEL", "HOT", "COLD", OFX_UI_FONT_MEDIUM));
+	*/
 
-	gui4->addWidgetDown(new ofxUILabel("MINIMAL SLIDER", OFX_UI_FONT_MEDIUM)); 				
-	gui4->addWidgetDown(new ofxUIMinimalSlider(length-xInit, dim, 0, 100, 50.0, "MINIMAL",OFX_UI_FONT_MEDIUM));
+	sliderL = 0;
+	sliderH = 1;
+	gui4->addWidgetDown(new ofxUIRangeSlider(length-xInit, dim, 0, 1, &sliderL, &sliderH, "RANGE",OFX_UI_FONT_MEDIUM));
 
+		//length-xInit, 0, 100, 50, "BILABEL", "HOT", "COLD", OFX_UI_FONT_MEDIUM));
+
+//	gui4->addWidgetDown(new ofxUILabel("MINIMAL SLIDER", OFX_UI_FONT_MEDIUM));
+	
+	slider = 0.5;
+	gui4->addWidgetDown(new ofxUIMinimalSlider(length-xInit, dim, 0, 1, &slider, "MINIMAL",OFX_UI_FONT_MEDIUM));
+	
+
+	/*
+	// TODO : bandpass, bandstop circles
 	gui4->addSpacer(length-xInit, 2);
-
 	gui4->addWidgetDown(new ofxUILabel("CIRCLE SLIDER", OFX_UI_FONT_MEDIUM)); 				
 	gui4->addWidgetDown(new ofxUICircleSlider((length-xInit)*.5, 0, 100, 50.0, "NORTH SOUTH", OFX_UI_FONT_MEDIUM));    
+	*/
 
 	gui4->addSpacer(length-xInit, 2);
 	gui4->addWidgetDown(new ofxUILabel("FPS SLIDER", OFX_UI_FONT_MEDIUM)); 				

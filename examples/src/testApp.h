@@ -97,7 +97,10 @@ private:
 	bool bdrawGrid; 
 	bool bdrawPadding; 
 
-	
+	float slider;
+	float sliderL;
+	float sliderH;
+
 
 
 };
