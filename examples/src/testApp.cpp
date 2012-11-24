@@ -58,9 +58,13 @@ void testApp::draw()
 
 	cv::Mat m(depthPixels->getHeight(), depthPixels->getWidth(),  CV_16UC1, depthPixels->getPixels());
 
+//	typedef void(*wtf)(int);
+//	typedef	void(*wtf)(cv::InputArray&, cv::InputArray&, int, int);	
+//	wtf f = &cv::dft;
+//	a b = 8;
 
-
-	static bool a = true;
+#define cvDraw(m){cv::imshow(#m,m);}
+#define cvDrawF(f, m){cv::Mat t;f(m,t);cv::imshow(#f ## #m,t);}
 
 	bool r = true;
 	
@@ -73,8 +77,41 @@ void testApp::draw()
 
 		w[i]->setVisible(r);
 	}
-	cv::Mat m2(depthPixels->getWidth(), depthPixels->getHeight(), CV_8UC1, depthPixels->getPixels(), 16);
-	imshow("", m2);
+
+	static bool first = true;
+	static bool eqT = true;
+	static bool eqB = true;
+	if (first)
+	{
+		first = false;
+		gui4->addToggle("eqT", &eqT, 10, 10);
+		gui4->addButton("eqB", &eqB, 10, 10);
+	}
+
+	if(1 /* use 8uc1? */ )
+	{
+		cv::Mat m8uc1;
+		m.convertTo(m8uc1, CV_8UC1, 1/4.0);
+		if (eqT)
+		{
+			cv::Mat eqed;
+			equalizeHist(m8uc1, eqed);
+			if(eqB /* draw? */ )
+			{
+				cvDraw(eqed);
+			}
+
+		}
+	}
+
+	if (1) cv::imshow("",m);
+
+	cv::Mat m32f;
+	m.convertTo(m32f, CV_32FC1);
+	cvDrawF(dct,m32f);
+
+//	cv::Mat mdct;
+//	cv::dct(m, m);
 
 
 
@@ -286,7 +323,6 @@ void testApp::setGUI4()
 
 	gui4->addWidgetDown(new ofxUIMultiImageButton(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
 	gui4->addWidgetDown(new ofxUIMultiImageToggle(dim*2, dim*2, false, "GUI/toggle.png", "IMAGE BUTTON"));
-
 
 	ofAddListener(gui4->newGUIEvent,this,&testApp::guiEvent);
 }
