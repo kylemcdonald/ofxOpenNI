@@ -119,10 +119,7 @@ void testApp::draw()
 	cv::Mat idctlpdctm32f;
 	cv::dct(lpdctm32f, idctlpdctm32f, cv::DCT_INVERSE);
 	cvDraw(idctlpdctm32f);
-
-
 	
-
 //	cv::Mat a[9];	for (int i = 0)
 
 	//cv::Mat a(depthPixels->getHeight(), depthPixels->getWidth(),  CV_32FC1);//, depthPixels->getPixels());
@@ -147,7 +144,7 @@ void testApp::draw()
 	for (int j=0; j < sizeof(cj)/sizeof(int); j++)
 		a.col(j).setTo(100);
 
-	a.setTo(0);
+//	a.setTo(0);
 	a.rowRange(2,3).colRange(1, 2).setTo(100);
 	
 //	a.data[2] = 100;
@@ -162,10 +159,23 @@ void testApp::draw()
 
 	cv::Mat a2;
 	cv::idct(a,a2);
-	cv::Mat a4;
-	cv::resize(a2, a4, cv::Size(), 4.0, 4.0);
-	cvDraw(a4);
+	
+	double* maxVal = new double;
+	cv::minMaxIdx(a2, 0, maxVal);
+	
+	cv::Mat a2u8;
+	a.convertTo(a2u8, CV_8UC1, 256.0 / *maxVal);
 
+#define drawBig(a2)                           \
+	{                                         \
+	cv::Mat a4;                               \
+	cv::resize(a2, a4, cv::Size(), 4.0, 4.0); \
+	cvDraw(a4);                               \
+	}
+
+	drawBig(a2u8);
+
+	
 	//CalibrationPattern 	CHESSBOARD;
 
 //	cv::Mat mdct;
