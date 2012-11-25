@@ -113,6 +113,7 @@ void testApp::draw()
 	cv::Mat dctm32f;
 	dct(m32f, dctm32f /* cv::DCT_ROWS */);
 
+
 	cv::Mat lpdctm32f;
 	lpdctm32f = dctm32f.rowRange(0, 50).colRange(0,50).clone();
 	
